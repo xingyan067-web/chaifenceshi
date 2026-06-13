@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>激活码生成器</title>
+    <style>
+        /* --- 基础与字体设置 --- */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&display=swap');
+
+        :root {
+            --bg-color: #fdfaf6; /* 柔和的奶油背景色 */
+            --card-color: #ffffff;
+            --text-primary: #4a4a4a; /* 深灰色文字，代替纯黑 */
+            --text-secondary: #9b9b9b;
+            --accent-color: #e7c1c2; /* 柔和的灰粉色 */
+            --accent-darker: #d1a9aa;
+            --border-color: #f0e9e4;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        /* --- 容器卡片样式 --- */
+        .container {
+            background: var(--card-color);
+            padding: 35px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        /* --- 标题与描述 --- */
+        h1 {
+            font-family: 'Georgia', 'Noto Serif SC', serif;
+            font-size: 26px;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        /* --- 输入框样式 --- */
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-bottom: 2px solid #eee;
+            border-radius: 0;
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 25px;
+            background-color: transparent;
+            transition: border-color 0.3s ease;
+            -webkit-appearance: none;
+            appearance: none;
+            color: var(--text-primary);
+        }
+        input[type="number"]::placeholder {
+            color: #ccc;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-bottom-color: var(--accent-color);
+        }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* --- 按钮样式 --- */
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(231, 193, 194, 0.4);
+        }
+        button:active {
+            background-color: var(--accent-darker);
+            transform: translateY(1px);
+            box-shadow: 0 2px 8px rgba(231, 193, 194, 0.3);
+        }
+
+        /* --- 结果区域样式 (ins风格卡片) --- */
+        #result-area {
+            margin-top: 40px;
+            padding: 25px;
+            background-color: var(--card-color);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+            position: relative;
+            transform: rotate(-1.5deg);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        }
+        /* 胶带装饰 */
+        #result-area::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%) rotate(2deg);
+            width: 100px;
+            height: 30px;
+            background: rgba(221, 201, 199, 0.4); /* 半透明胶带颜色 */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-left: 1px solid rgba(255,255,255,0.5);
+            border-right: 1px solid rgba(255,255,255,0.5);
+        }
+
+        #result-area h2 {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+            font-size: 18px;
+            font-weight: 400;
+            color: var(--accent-darker);
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #result-area p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        #result-area p strong {
+            color: var(--text-primary);
+        }
+
+        .code-box {
+            display: flex;
+            align-items: center;
+            background: #f7f7f7;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        #result-code {
+            flex-grow: 1;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            padding: 8px;
+            word-break: break-all;
+        }
+        .code-box button {
+            width: auto;
+            padding: 8px 15px;
+            font-size: 14px;
+            flex-shrink: 0;
+            background-color: #4a4a4a;
+            box-shadow: none;
+        }
+        .code-box button:active {
+            background-color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Generator</h1>
+        <p>为指定QQ号生成绑定的激活码</p>
+        
+        <input type="number" id="qq-input-admin" placeholder="在此输入用户QQ号">
+        
+        <button onclick="handleGenerateClick()">生成激活码</button>
+        
+        <div id="result-area" style="display:none;">
+            <h2>Success!</h2>
+            <p><strong>For QQ:</strong> <span id="result-qq"></span></p>
+            <p><strong>Activation Code:</strong></p>
+            <div class="code-box">
+                <span id="result-code"></span>
+                <button onclick="copyCode()">复制</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase 配置
+        const SUPABASE_URL = 'https://ofsvczapcsudymnijjrq.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_IbfurTy7b2S3SnmnhDqL7Q_vFfQi9PA';
+        const SUPABASE_HEADERS = {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json'
+        };
+
+        /**
+         * 根据QQ号生成一个唯一的、伪绑定的激活码 (全新V2算法)
+         * @param {string} qq - 用户的QQ号
+         * @returns {string} - 生成的激活码
+         * 注意：此函数必须与你项目 script.js 中的函数完全一致！
+         */
+        function generateCodeForQQ(qq) {
+            // 1. 修改盐值 (Salt)：必须与 script.js 中的新盐值保持绝对一致
+            const salt = "HONEY-STUDIO-V2-SECRET-20260309";
+
+            const baseString = `${qq}#${salt}`;
+
+            let hash = 0;
+            // 2. 修改位移量为 << 7
+            for (let i = 0; i < baseString.length; i++) {
+                const char = baseString.charCodeAt(i);
+                hash = ((hash << 7) - hash) + char;
+                hash |= 0;
+            }
+            hash = Math.abs(hash);
+
+            const hexHash = hash.toString(16).toUpperCase();
+            const qqInfo = `${qq.length}${qq.slice(-2)}`;
+            // 3. 修改前缀为 V2-
+            const finalCode = `V2-${qqInfo}-${hexHash}`.substring(0, 16);
+
+            return finalCode;
+        }
+
+        async function handleGenerateClick() {
+            const qqInput = document.getElementById('qq-input-admin');
+            const qq = qqInput.value.trim();
+
+            if (!qq) {
+                alert('请输入QQ号！');
+                return;
+            }
+
+            const code = generateCodeForQQ(qq);
+
+            // 先检查激活码是否已存在
+            try {
+                const checkRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/vip_keys?code=eq.${encodeURIComponent(code)}&select=*`,
+                    { headers: SUPABASE_HEADERS }
+                );
+                if (checkRes.ok) {
+                    const existing = await checkRes.json();
+                    if (existing.length > 0) {
+                        alert('该激活码已存在，无需重复生成');
+                        document.getElementById('result-qq').textContent = qq;
+                        document.getElementById('result-code').textContent = code;
+                        document.getElementById('result-area').style.display = 'block';
+                        return;
+                    }
+                }
+            } catch (e) {
+                alert('网络错误，请重试');
+                return;
+            }
+
+            // 插入新激活码到 vip_keys 表
+            try {
+                const insertRes = await fetch(
+                    `${SUPABASE_URL}/rest/v1/vip_keys`,
+                    {
+                        method: 'POST',
+                        headers: { ...SUPABASE_HEADERS, 'Prefer': 'return=minimal' },
+                        body: JSON.stringify({
+                            code: code,
+                            is_used: false,
+                            qq: null,
+                            password: null
+                        })
+                    }
+                );
+                if (!insertRes.ok) {
+                    alert('入库失败 [' + insertRes.status + ']');
+                    return;
+                }
+            } catch (e) {
+                alert('入库失败，请重试');
+                return;
+            }
+
+            document.getElementById('result-qq').textContent = qq;
+            document.getElementById('result-code').textContent = code;
+            document.getElementById('result-area').style.display = 'block';
+        }
+
+        function copyCode() {
+            const codeToCopy = document.getElementById('result-code').textContent;
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(codeToCopy).then(() => {
+                    alert('激活码已复制！');
+                }).catch(err => {
+                    alert('自动复制失败，请手动长按复制。');
+                });
+            } else {
+                // 兼容旧版或非安全环境
+                const textArea = document.createElement("textarea");
+                textArea.value = codeToCopy;
+                textArea.style.position = "absolute";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert('激活码已复制！');
+                } catch (err) {
+                    alert('自动复制失败，请手动长按复制。');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+    </script>
+
+</body>
+</html>
