@@ -11743,11 +11743,25 @@ async function wcSaveImportUnlockedToDB(qq) {
     }
 }
 
-function wcGenerateImportUnlockCode(qq) {
-    const padded = qq.padStart(16, '0');
+function wcGetImportDeviceCode() {
+    let deviceCode = localStorage.getItem('import_device_code');
+    if (!deviceCode) {
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let code = '';
+        for (let i = 0; i < 16; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+        }
+        deviceCode = code.match(/.{1,4}/g).join('-');
+        localStorage.setItem('import_device_code', deviceCode);
+    }
+    return deviceCode;
+}
+
+function wcGenerateImportUnlockCode(deviceCode) {
+    const clean = deviceCode.replace(/-/g, '').toUpperCase();
     let result = '';
-    for (let i = 0; i < padded.length; i++) {
-        const charCode = padded.charCodeAt(i);
+    for (let i = 0; i < clean.length; i++) {
+        const charCode = clean.charCodeAt(i);
         const secretChar = IMPORT_SECRET.charCodeAt(i % IMPORT_SECRET.length);
         const shift = ((secretChar * (i + 1)) % 35);
         let newCode;
@@ -11764,12 +11778,11 @@ function wcGenerateImportUnlockCode(qq) {
 }
 
 function wcOpenImportUnlockModal() {
-    const qq = wcGetCurrentLoginQQ();
-    if (!qq) {
+    if (!wcGetCurrentLoginQQ()) {
         alert('请先登录账号！');
         return;
     }
-    document.getElementById('importDeviceCode').textContent = qq;
+    document.getElementById('importDeviceCode').textContent = wcGetImportDeviceCode();
     document.getElementById('importUnlockCodeInput').value = '';
     document.getElementById('importUnlockModalOverlay').classList.add('show');
 }
@@ -11778,11 +11791,11 @@ function wcCloseImportUnlockModal() {
     document.getElementById('importUnlockModalOverlay').classList.remove('show');
 }
 
-function wcCopyImportAccount() {
+function wcCopyImportDeviceCode() {
     const code = document.getElementById('importDeviceCode').textContent;
     if (!code || code === '----') return;
     if (navigator.clipboard) {
-        navigator.clipboard.writeText(code).then(() => alert('账号已复制'));
+        navigator.clipboard.writeText(code).then(() => alert('设备码已复制'));
     } else {
         const ta = document.createElement('textarea');
         ta.value = code;
@@ -11791,18 +11804,19 @@ function wcCopyImportAccount() {
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        alert('账号已复制');
+        alert('设备码已复制');
     }
 }
 
 async function wcVerifyImportUnlockCode() {
     const input = document.getElementById('importUnlockCodeInput').value.trim().toUpperCase();
+    const deviceCode = wcGetImportDeviceCode();
     const qq = wcGetCurrentLoginQQ();
     if (!qq) {
         alert('账号异常，请重新登录！');
         return;
     }
-    const expected = wcGenerateImportUnlockCode(qq);
+    const expected = wcGenerateImportUnlockCode(deviceCode);
     if (input === expected) {
         localStorage.setItem('import_unlocked', 'true');
         await wcSaveImportUnlockedToDB(qq);
