@@ -11706,9 +11706,7 @@ function wcIsImportAdmin() {
 
 async function wcIsImportUnlocked() {
     if (wcIsImportAdmin()) return true;
-    if (localStorage.getItem('import_unlocked') === 'true') return true;
 
-    // 换浏览器/换设备：从 Supabase 恢复解锁状态
     const qq = wcGetCurrentLoginQQ();
     if (!qq) return false;
     try {
@@ -11719,12 +11717,12 @@ async function wcIsImportUnlocked() {
         if (res.ok) {
             const rows = await res.json();
             if (rows.length > 0 && rows[0].import_unlocked === true) {
-                localStorage.setItem('import_unlocked', 'true');
                 return true;
             }
         }
     } catch (e) {
-        // 网络异常时仅依赖 localStorage
+        // 网络异常时回退 localStorage
+        if (localStorage.getItem('import_unlocked_' + (wcGetCurrentLoginQQ() || 'admin')) === 'true') return true;
     }
     return false;
 }
@@ -11815,7 +11813,6 @@ async function wcVerifyImportUnlockCode() {
     }
     const expected = wcGenerateImportUnlockCode(deviceCode);
     if (input === expected) {
-        localStorage.setItem('import_unlocked', 'true');
         await wcSaveImportUnlockedToDB(qq);
         wcCloseImportUnlockModal();
         document.getElementById('importWarningModalOverlay').classList.add('show');
