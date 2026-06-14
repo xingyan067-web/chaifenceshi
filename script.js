@@ -11695,9 +11695,9 @@ const IMPORT_ADMIN_QQS = ['3515759139', '1509048968', '3292315195'];
 const IMPORT_SECRET = 'XIYU-IMPORT-2026';
 
 function wcGetCurrentLoginQQ() {
-    const token = localStorage.getItem('auth_token');
-    if (token && token.startsWith('valid_user_')) {
-        return token.replace('valid_user_', '');
+    const loginState = localStorage.getItem('app_login_state');
+    if (loginState === 'logged_in') {
+        return localStorage.getItem('app_qq');
     }
     return null;
 }

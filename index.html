@@ -5801,7 +5801,7 @@
                             </div>
                             <!-- 👇 导入角色按钮 👇 -->
                             <div class="wc-list-item center-content" onclick="wcCloseModal('wc-modal-create-choice'); wcImportCharCard();" style="background: white; height: 56px; border-top: 1px solid #EAEAEA;">
-                                <span style="font-size: 18px; color: #007AFF;">导入角色 (JSON/PNG/TXT/DOCX)</span>
+                                <span style="font-size: 18px; color: #007AFF;">导入角色 (JSON/PNG)</span>
                             </div>
                             <!-- 👇 导入txt/docx按钮 👇 -->
                             <div class="wc-list-item center-content" onclick="wcCloseModal('wc-modal-create-choice'); wcImportTxtDocxChar();" style="background: white; height: 56px;">
@@ -7080,7 +7080,7 @@
 
                 <input type="file" id="wc-file-input-char" accept="image/*" onchange="wcHandleFileSelect(event, 'char')" style="display:none;">
                 <!-- 👇 新增：角色导入文件框 (支持 txt/docx) 👇 -->
-                <input type="file" id="wc-import-char-input" accept=".json,.png,.txt,.docx" style="display:none;" onchange="wcHandleCharImport(event)">
+                <input type="file" id="wc-import-char-input" accept=".json,.png" style="display:none;" onchange="wcHandleCharImport(event)">
                 <!-- 👇 新增：世界书导入文件框 👇 -->
                 <input type="file" id="wbImportInput" accept=".json,.txt,.docx" style="display:none;" onchange="handleWorldbookImport(event)">
                 <!-- 👇 新增：CSS 导入文件框 👇 -->
