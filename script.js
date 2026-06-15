@@ -11706,7 +11706,6 @@ function wcIsImportAdmin() {
 
 async function wcIsImportUnlocked() {
     if (wcIsImportAdmin()) return true;
-
     const qq = wcGetCurrentLoginQQ();
     if (!qq) return false;
     try {
@@ -11716,26 +11715,10 @@ async function wcIsImportUnlocked() {
         );
         if (res.ok) {
             const rows = await res.json();
-            if (rows.length > 0 && rows[0].import_unlocked === true) {
-                return true;
-            }
+            if (rows.length > 0 && rows[0].import_unlocked === true) return true;
         }
-    } catch (e) {
-        // 网络异常时回退 localStorage
-        if (localStorage.getItem('import_unlocked_' + (wcGetCurrentLoginQQ() || 'admin')) === 'true') return true;
-    }
+    } catch (e) {}
     return false;
-}
-
-async function wcSaveImportUnlockedToDB(qq) {
-    try {
-        await fetch(
-            `${SUPABASE_URL}/rest/v1/vip_keys?qq=eq.${encodeURIComponent(qq)}`,
-            { method: 'PATCH', headers: { ...SUPABASE_HEADERS, 'Prefer': 'return=minimal' }, body: JSON.stringify({ import_unlocked: true }) }
-        );
-    } catch (e) {
-        console.error('同步解锁状态到数据库失败:', e);
-    }
 }
 
 function wcGetImportDeviceCode() {
@@ -11773,10 +11756,6 @@ function wcGenerateImportUnlockCode(deviceCode) {
 }
 
 function wcOpenImportUnlockModal() {
-    if (!wcGetCurrentLoginQQ()) {
-        alert('请先登录账号！');
-        return;
-    }
     document.getElementById('importDeviceCode').textContent = wcGetImportDeviceCode();
     document.getElementById('importUnlockCodeInput').value = '';
     document.getElementById('importUnlockModalOverlay').classList.add('show');
@@ -11807,18 +11786,41 @@ async function wcVerifyImportUnlockCode() {
     const input = document.getElementById('importUnlockCodeInput').value.trim().toUpperCase();
     const deviceCode = wcGetImportDeviceCode();
     const qq = wcGetCurrentLoginQQ();
-    if (!qq) {
-        alert('账号异常，请重新登录！');
+    if (!qq) { alert('请先登录！'); return; }
+    const expected = wcGenerateImportUnlockCode(deviceCode);
+    if (input !== expected) {
+        alert('解锁码错误，请检查后重试！');
         return;
     }
-    const expected = wcGenerateImportUnlockCode(deviceCode);
-    if (input === expected) {
-        await wcSaveImportUnlockedToDB(qq);
-        wcCloseImportUnlockModal();
-        document.getElementById('importWarningModalOverlay').classList.add('show');
-    } else {
-        alert('解锁码错误，请检查后重试！');
+    // Step 1: PATCH 写入 Supabase
+    try {
+        const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/vip_keys?qq=eq.${encodeURIComponent(qq)}`,
+            { method: 'PATCH', headers: SUPABASE_HEADERS, body: JSON.stringify({ import_unlocked: true }) }
+        );
+        if (!res.ok) throw new Error('状态码 ' + res.status);
+    } catch (e) {
+        alert('云端同步失败，请检查网络后重试！');
+        return;
     }
+    // Step 2: 回读 Supabase 确认写入成功（防网络静默失败 / F12拦截）
+    try {
+        const checkRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/vip_keys?qq=eq.${encodeURIComponent(qq)}&select=import_unlocked`,
+            { headers: SUPABASE_HEADERS }
+        );
+        if (!checkRes.ok) throw new Error('回读失败');
+        const rows = await checkRes.json();
+        if (!(rows.length > 0 && rows[0].import_unlocked === true)) {
+            alert('云端验证未通过，请重试！');
+            return;
+        }
+    } catch (e) {
+        alert('云端验证失败，请检查网络后重试！');
+        return;
+    }
+    wcCloseImportUnlockModal();
+    document.getElementById('importWarningModalOverlay').classList.add('show');
 }
 
 function wcCloseImportWarningModal() {

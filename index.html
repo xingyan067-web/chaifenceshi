@@ -1881,7 +1881,7 @@
         <!-- ========================================== -->
         <style>
         /* ===== 阅读App 通用 ===== */
-        .ra-topbar { display:flex; align-items:center; height:50px; padding:44px 16px 10px; background:#F5F5F5; border-bottom:1px solid #EAEAEA; flex-shrink:0; position:relative; z-index:1; isolation:isolate; }
+        .ra-topbar { display:flex; align-items:center; height:50px; padding: calc(env(safe-area-inset-top, 44px) + 10px) 16px 10px; background:#F5F5F5; border-bottom:1px solid #EAEAEA; flex-shrink:0; position:relative; z-index:1; isolation:isolate; }
         .ra-topbar-left, .ra-topbar-right { width:40px; }
         .ra-topbar-title { flex:1; text-align:center; font-size:17px; font-weight:600; color:#222; letter-spacing:0.5px; }
         .ra-back-btn { width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius:50%; }
