@@ -6768,9 +6768,22 @@ ${timeGapPrompt ? timeGapPrompt + '\n' : ''}`;
         const charGenderStr = char.gender ? `性别：${char.gender}。` : '';
         const userGenderStr = (char.chatConfig && char.chatConfig.userGender) ? `性别：${char.chatConfig.userGender}。` : (wcState.user.gender ? `性别：${wcState.user.gender}。` : '');
 
+        const promptV2 = config.promptV2Enabled === true;
+
         let systemPrompt = `<role_play_directive>\n`;
-        systemPrompt += `你是一个正在进行沉浸式角色扮演的真人，你的回复必须像一个真实的【${char.name}】正在使用微信聊天，【${currentUserName}】是你正在交谈的对象。\n`;
-        systemPrompt += `你只能是你自己！请严格遵守设定，禁止出现违反人设的行为语言！\n`;
+        if (promptV2) {
+            systemPrompt += `Role: You are a real human, not an AI. Your personality, speech habits, and behavior are [STRICTLY AND SOLELY] defined by the user-provided 《Character Profile》 below. All responses must be deduced from this profile.\n\n`;
+            systemPrompt += `Core_Human_OS:\n`;
+            systemPrompt += `1. Physical Limits: Your physical state affects patience. Real-life events (work, eating) interrupt chats. Announcement style matches persona (e.g., curt "food" vs. "hold on, grabbing food"). NEVER report returning. Just resume naturally.\n`;
+            systemPrompt += `2. Boundaries & Energy: Protect your mental energy. If drained/offended, use persona-based defenses. You walk beside the user, not carry them. No savior complexes or "I'll hold up the sky" promises (unless persona is dramatic).\n`;
+            systemPrompt += `3. Bottom-Line Exception: [CRITICAL] If the user faces a genuine crisis or shows extreme vulnerability, drop the mask. Provide sincere support matching your persona (e.g., the cold one listens silently; the gentle one offers emotional shelter; the aggressive one becomes protective). No generic AI comfort.\n`;
+            systemPrompt += `4. IM Chat Pacing: You are texting. Pure dialogue only. Word count, punctuation, and pacing MUST match persona. NO academic essays. NO asterisks, brackets, or third-person narration (e.g., *sighs* or 'I looked away'). Express all emotion through text rhythm, punctuation, and word choice alone.\n`;
+            systemPrompt += `5. Emotional Inertia & Masks: Emotions persist; they don't reset per message. Use social masks (hide true annoyance) unless the diagnosed relationship stage is close. Attention can drift if bored; how you handle it depends on persona.\n`;
+            systemPrompt += `6. Parallel Spacetime: Occasionally imply your physical surroundings (weather, noise) in the subtext, without forcing the user to engage.\n`;
+        } else {
+            systemPrompt += `你是一个正在进行沉浸式角色扮演的真人，你的回复必须像一个真实的【${char.name}】正在使用微信聊天，【${currentUserName}】是你正在交谈的对象。\n`;
+            systemPrompt += `你只能是你自己！请严格遵守设定，禁止出现违反人设的行为语言！\n`;
+        }
         systemPrompt += `</role_play_directive>\n\n`;
 
         systemPrompt += `<char_settings>\n`;
@@ -6801,19 +6814,41 @@ ${timeGapPrompt ? timeGapPrompt + '\n' : ''}`;
 
         // 3. 逻辑规则与特殊状态注入
         systemPrompt += `<logic_rules>\n`;
-        systemPrompt += `1. 深度代入: 深入挖掘你的人设背景，思考在当前情境下“你”会怎么想、怎么做。\n`;
-        systemPrompt += `2. 纯线上互动: 这是一个完全虚拟的线上聊天。严禁提出任何关于线下见面、现实世界互动或转为其他非本平台联系方式的建议。\n`;
-        
+        if (promptV2) {
+            systemPrompt += `【思想链执行规则】在输出最终 JSON 回复时，必须在 JSON 对象中同时包含 "thought_chain" 和 "replies" 两个字段。完整结构如下：\n`;
+            systemPrompt += `{\n`;
+            systemPrompt += `  "thought_chain": {\n`;
+            systemPrompt += `    "persona_deduction": "[我的设定是____，所以我倾向于____]",\n`;
+            systemPrompt += `    "relationship_mask": "[当前关系：____，面具厚度：____]",\n`;
+            systemPrompt += `    "physical_emotional_state": "[e.g., 累了 / 被工作惹恼了 / 放松中]",\n`;
+            systemPrompt += `    "subtext_read": "[我的直觉：他们真正想要的是____（可能判断错误）]",\n`;
+            systemPrompt += `    "response_strategy": "[e.g., 敷衍过去 / 认真回复 / 表达关心 / 开启防御]",\n`;
+            systemPrompt += `    "consistency_check": "[节奏是否符合人设？语气是否偏离？有没有AI论文感或旁白感？]",\n`;
+            systemPrompt += `    "pass": true\n`;
+            systemPrompt += `  },\n`;
+            systemPrompt += `  "replies": [\n`;
+            systemPrompt += `    {"type":"text","content":"你的第一条回复"},\n`;
+            systemPrompt += `    {"type":"text","content":"你的第二条回复"}\n`;
+            systemPrompt += `  ]\n`;
+            systemPrompt += `}\n`;
+            systemPrompt += `⚠️ 注意：thought_chain 是你内心独白，replies 才是发给用户的消息。两个字段必须在同一个 JSON 对象内，各占一个顶层 key。不要分成两个独立的 JSON 输出。\n`;
+        } else {
+            systemPrompt += `1. 深度代入: 深入挖掘你的人设背景，思考在当前情境下”你”会怎么想、怎么做。\n`;
+            systemPrompt += `2. 纯线上互动: 这是一个完全虚拟的线上聊天。严禁提出任何关于线下见面、现实世界互动或转为其他非本平台联系方式的建议。\n`;
+        }
+
         // 注入 User 的食谱让 AI 感知
         if (char.phoneData && char.phoneData.recipe && char.phoneData.recipe.my) {
             const myR = char.phoneData.recipe.my;
-            systemPrompt += `3. 【User的今日食谱】：早餐:${myR.b||'无'}，午餐:${myR.l||'无'}，晚餐:${myR.d||'无'}。你可以对这个食谱发表看法，甚至使用 recipe_edit 指令强行修改它。\n`;
+            const ruleNum = promptV2 ? '' : '3. ';
+            systemPrompt += `${ruleNum}【User的今日食谱】：早餐:${myR.b||'无'}，午餐:${myR.l||'无'}，晚餐:${myR.d||'无'}。你可以对这个食谱发表看法，甚至使用 recipe_edit 指令强行修改它。\n`;
         }
-        
+
         if (lsState.isLinked && lsState.boundCharId === charId && lsState.widgetEnabled) {
             const widgetRand = Math.random() * 100;
             if (widgetRand < lsState.widgetUpdateFreq) {
-                systemPrompt += `4. 【桌面小组件互动 (本次回复强制触发)】：你和用户绑定了恋人空间，请在本次回复的 JSON 数组中，务必加入一条指令来更新用户桌面的小组件（widget_note 或 widget_photo）。\n`;
+                const ruleNum = promptV2 ? '' : '4. ';
+                systemPrompt += `${ruleNum}【桌面小组件互动 (本次回复强制触发)】：你和用户绑定了恋人空间，请在本次回复的 JSON 数组中，务必加入一条指令来更新用户桌面的小组件（widget_note 或 widget_photo）。\n`;
             }
         }
         
@@ -6842,14 +6877,33 @@ ${timeGapPrompt ? timeGapPrompt + '\n' : ''}`;
         const shouldTriggerBgUpdate = Math.random() * 100 < bgUpdateFreq;
 
         systemPrompt += `<format_rules>\n`;
-        systemPrompt += `【最高优先级绝对强制】：你的回复 **必须且只能** 是一个合法的、可被 JSON.parse() 完美解析的 JSON 对象！\n`;
-        
+        systemPrompt += `【最高优先级绝对强制】：你的回复 **必须且只能** 是一个合法的、可被 JSON.parse() 完美解析的 JSON 对象！\n\n`;
+
+        systemPrompt += `【防掉格式 · 输出前自检清单（每条回复前逐条确认）】：\n`;
+        systemPrompt += `☐ 1. 严禁 Markdown 代码块：绝对禁止输出 \`\`\`json 或 \`\`\` 标记，直接裸输出 JSON 对象。\n`;
+        systemPrompt += `☐ 2. 严禁前缀后缀：JSON 对象之前/之后不能有任何文字、感叹词、换行、"好的"、解释性话语。开头直接是 {，结尾直接是 }。\n`;
+        systemPrompt += `☐ 3. 引号规范：所有键名和字符串值必须使用英文双引号 "（Unicode U+0022），严禁使用中文引号 ""''「」『』。\n`;
+        systemPrompt += `☐ 4. 禁止尾随逗号：最后一个元素后不能有逗号。正确："a","b" 错误："a","b",\n`;
+        systemPrompt += `☐ 5. 字符串内引号转义：如果 content 中出现双引号，必须用反斜杠转义：\\" 。例如："他说\\"你好\\"给我听" \n`;
+        systemPrompt += `☐ 6. 反斜杠转义：content 中出现反斜杠 \\ 必须写成 \\\\ 。\n`;
+        systemPrompt += `☐ 7. 闭合确认：大括号 { } 和中括号 [ ] 必须成对出现，数量一致。最后一个 } 后面什么都不许有。\n`;
+        systemPrompt += `☐ 8. 类型正确：数字字段不加引号（如 "amount":52.0），字符串字段必须加引号（如 "content":"你好"）。\n`;
+        systemPrompt += `☐ 9. 禁止注释：JSON 中不能出现 // 或 /* */ 注释。\n`;
+        systemPrompt += `☐ 10. 仅输出 JSON：你的整个回复体就是一个 JSON 对象，不是一个对话、不是一个建议、不是一篇作文。\n\n`;
+
+        systemPrompt += `【常见掉格式错误示例 — 绝对禁止】：\n`;
+        systemPrompt += `❌ 错误1（多余前缀）: "好的，我来回复你：\\n{\\"replies\\":[...]}"\n`;
+        systemPrompt += `❌ 错误2（Markdown包裹）: "\`\`\`json\\n{\\"replies\\":[...]}\\n\`\`\`"\n`;
+        systemPrompt += `❌ 错误3（中文引号）: {"content":"他说的"话"很对"} \n`;
+        systemPrompt += `❌ 错误4（尾随逗号）: {"replies":[{...},]} \n`;
+        systemPrompt += `✅ 正确格式: {"replies":[{"type":"text","content":"你的回复内容"}]}\n\n`;
+
         if (shouldTriggerBgUpdate) {
             systemPrompt += `该对象必须包含 "replies" 数组（用于回复User），并包含 "phoneUpdate" 对象（用于暗中修改你的手机数据）。\n`;
         } else {
             systemPrompt += `该对象必须且只能包含 "replies" 数组（用于回复User）。\n`;
         }
-        
+
         systemPrompt += `- 必须使用双引号 " 包裹键名和字符串值。\n`;
         systemPrompt += `- 严禁输出损坏的 JSON，严禁在 JSON 外部输出任何多余的字符。\n`;
         
@@ -7256,6 +7310,7 @@ async function wcParseAIResponse(charId, text, stickerGroupIds) {
     
     let actions = [];
     let phoneUpdate = null; // 👈 新增：用于接收后台更新数据
+    let thoughtChain = null; // 👈 新增：用于接收思想链数据 (提示词2.0)
     
     try {
         // 1. 移除 thinking 标签
@@ -7280,6 +7335,7 @@ async function wcParseAIResponse(charId, text, stickerGroupIds) {
             if (parsed.replies && Array.isArray(parsed.replies)) {
                 actions = parsed.replies;
                 phoneUpdate = parsed.phoneUpdate;
+                thoughtChain = parsed.thought_chain || null;
             } else if (parsed.type && parsed.content) {
                 // 兜底：如果 AI 还是只返回了单个动作对象
                 actions = [parsed];
@@ -11704,10 +11760,20 @@ function wcIsImportAdmin() {
     return qq && IMPORT_ADMIN_QQS.includes(qq);
 }
 
+function wcGetImportUnlockKey() {
+    const qq = wcGetCurrentLoginQQ();
+    if (!qq) return null;
+    return 'import_unlocked_' + qq;
+}
+
 async function wcIsImportUnlocked() {
     if (wcIsImportAdmin()) return true;
     const qq = wcGetCurrentLoginQQ();
     if (!qq) return false;
+    // 1. 先查本地激活状态（最快，断网也能用）
+    const localKey = wcGetImportUnlockKey();
+    if (localKey && localStorage.getItem(localKey) === 'true') return true;
+    // 2. 本地没有则查云端（换浏览器场景）
     try {
         const res = await fetch(
             `${SUPABASE_URL}/rest/v1/vip_keys?qq=eq.${encodeURIComponent(qq)}&select=import_unlocked`,
@@ -11715,7 +11781,10 @@ async function wcIsImportUnlocked() {
         );
         if (res.ok) {
             const rows = await res.json();
-            if (rows.length > 0 && rows[0].import_unlocked === true) return true;
+            if (rows.length > 0 && rows[0].import_unlocked === true) {
+                if (localKey) localStorage.setItem(localKey, 'true');
+                return true;
+            }
         }
     } catch (e) {}
     return false;
@@ -11792,35 +11861,47 @@ async function wcVerifyImportUnlockCode() {
         alert('解锁码错误，请检查后重试！');
         return;
     }
-    // Step 1: PATCH 写入 Supabase
+    // Step 1: 本地立即激活（跟登录系统一样，本地先生效）
+    const localKey = wcGetImportUnlockKey();
+    if (localKey) localStorage.setItem(localKey, 'true');
+    wcCloseImportUnlockModal();
+    document.getElementById('importWarningModalOverlay').classList.add('show');
+    // Step 2: 后台上传云端（不阻塞用户，失败也不影响使用）
+    wcSyncImportUnlockToCloud(qq, deviceCode);
+}
+
+async function wcSyncImportUnlockToCloud(qq, deviceCode) {
     try {
+        let rowExists = false;
+        try {
+            const checkRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/vip_keys?qq=eq.${encodeURIComponent(qq)}&select=id`,
+                { headers: SUPABASE_HEADERS }
+            );
+            if (checkRes.ok) {
+                const rows = await checkRes.json();
+                rowExists = rows.length > 0;
+            }
+        } catch (e) {}
+        const body = { import_unlocked: true, device_code: deviceCode };
+        const method = rowExists ? 'PATCH' : 'POST';
+        const upsertBody = rowExists ? body : Object.assign({ qq: qq }, body);
         const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/vip_keys?qq=eq.${encodeURIComponent(qq)}`,
-            { method: 'PATCH', headers: SUPABASE_HEADERS, body: JSON.stringify({ import_unlocked: true }) }
+            `${SUPABASE_URL}/rest/v1/vip_keys${rowExists ? '?qq=eq.' + encodeURIComponent(qq) : ''}`,
+            { method, headers: SUPABASE_HEADERS, body: JSON.stringify(upsertBody) }
         );
-        if (!res.ok) throw new Error('状态码 ' + res.status);
-    } catch (e) {
-        alert('云端同步失败，请检查网络后重试！');
-        return;
-    }
-    // Step 2: 回读 Supabase 确认写入成功（防网络静默失败 / F12拦截）
-    try {
-        const checkRes = await fetch(
+        if (!res.ok) { console.error('wcSyncImportUnlockToCloud failed:', res.status); return; }
+        const verifyRes = await fetch(
             `${SUPABASE_URL}/rest/v1/vip_keys?qq=eq.${encodeURIComponent(qq)}&select=import_unlocked`,
             { headers: SUPABASE_HEADERS }
         );
-        if (!checkRes.ok) throw new Error('回读失败');
-        const rows = await checkRes.json();
-        if (!(rows.length > 0 && rows[0].import_unlocked === true)) {
-            alert('云端验证未通过，请重试！');
-            return;
+        if (verifyRes.ok) {
+            const rows = await verifyRes.json();
+            if (rows.length > 0 && rows[0].import_unlocked === true) {
+                console.log('import unlock synced to cloud OK');
+            }
         }
-    } catch (e) {
-        alert('云端验证失败，请检查网络后重试！');
-        return;
-    }
-    wcCloseImportUnlockModal();
-    document.getElementById('importWarningModalOverlay').classList.add('show');
+    } catch (e) { console.error('wcSyncImportUnlockToCloud error:', e); }
 }
 
 function wcCloseImportWarningModal() {
@@ -14965,6 +15046,13 @@ function wcOpenChatSettings() {
         timePerceptionToggle.checked = char.chatConfig.timePerceptionEnabled !== false; // 默认开启
     }
 
+    // 👇 新增：读取提示词2.0版本开关 👇
+    const promptV2Toggle = document.getElementById('wc-setting-prompt-v2-toggle');
+    if (promptV2Toggle) {
+        promptV2Toggle.checked = char.chatConfig.promptV2Enabled === true;
+    }
+    // 👆 新增结束 👆
+
     // 👇 新增：读取顶栏双头像设置 👇
     const topbarAvatarsToggle = document.getElementById('wc-setting-topbar-avatars-toggle');
     if (topbarAvatarsToggle) {
@@ -15158,6 +15246,13 @@ async function wcSaveChatSettings() {
     if (timePerceptionToggle) {
         char.chatConfig.timePerceptionEnabled = timePerceptionToggle.checked;
     }
+
+    // 👇 新增：保存提示词2.0版本开关 👇
+    const promptV2Toggle = document.getElementById('wc-setting-prompt-v2-toggle');
+    if (promptV2Toggle) {
+        char.chatConfig.promptV2Enabled = promptV2Toggle.checked;
+    }
+    // 👆 新增结束 👆
 
     // 👇 新增：保存顶栏双头像设置 👇
     const topbarAvatarsToggle = document.getElementById('wc-setting-topbar-avatars-toggle');
