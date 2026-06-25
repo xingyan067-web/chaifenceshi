@@ -25318,17 +25318,15 @@ function applyDreamBackground() {
         }
     }
 
-    // 5. 底栏：有背景图时透明（跟随背景层），否则跟随背景色
+    // 5. 底栏和模型标签：有背景图时也加上同样的背景
     var footer = document.querySelector('.dream-chat-footer');
     if (footer) {
         if (bgImage) {
-            footer.style.background = 'transparent';
-            footer.style.backdropFilter = 'none';
-            footer.style.borderTopColor = 'rgba(255,255,255,0.08)';
+            footer.style.setProperty('background', bgColor + ' url(' + bgImage + ') center/cover no-repeat', 'important');
+            footer.style.setProperty('border-top', '1px solid rgba(255,255,255,0.08)', 'important');
         } else {
-            footer.style.background = bgColor;
-            footer.style.backdropFilter = 'none';
-            footer.style.borderTopColor = 'var(--dream-border-color, #222)';
+            footer.style.setProperty('background', bgColor, 'important');
+            footer.style.setProperty('border-top', '1px solid var(--dream-border-color, #222)', 'important');
         }
     }
 
