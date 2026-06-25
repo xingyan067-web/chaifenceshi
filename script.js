@@ -25270,21 +25270,36 @@ function applyDreamFontSettings() {
 
 // 梦境自定义背景
 function applyDreamBackground() {
-    var pages = document.querySelectorAll('#dream-main-page, #dream-chat-page');
-    var headers = document.querySelectorAll('#dream-main-page .dream-header, #dream-chat-page .dream-header');
     var bgColor = dreamState.bgColor || '#0A0A0A';
     var bgImage = dreamState.bgImage || '';
-    for (var i = 0; i < pages.length; i++) {
-        if (pages[i]) {
-            if (bgImage) {
-                pages[i].style.background = bgColor + ' url(' + bgImage + ') center/cover no-repeat';
-            } else {
-                pages[i].style.background = bgColor;
-                pages[i].style.backgroundImage = '';
-            }
+
+    // 1. 梦境主页：直接设置页面背景
+    var mainPage = document.getElementById('dream-main-page');
+    if (mainPage) {
+        if (bgImage) {
+            mainPage.style.background = bgColor + ' url(' + bgImage + ') center/cover no-repeat';
+        } else {
+            mainPage.style.background = bgColor;
+            mainPage.style.backgroundImage = '';
         }
     }
-    // 自定义背景时头部半透明
+
+    // 2. 梦境聊天页：设置到 #dream-chat-bg 背景层（它覆盖整个页面）
+    var chatBg = document.getElementById('dream-chat-bg');
+    if (chatBg) {
+        if (bgImage) {
+            chatBg.style.background = bgColor + ' url(' + bgImage + ') center/cover no-repeat';
+        } else {
+            chatBg.style.background = bgColor;
+            chatBg.style.backgroundImage = '';
+        }
+    }
+
+    // 3. 更新 CSS 变量，让 footer 等引用 --dream-bg-color 的元素同步
+    document.documentElement.style.setProperty('--dream-bg-color', bgColor);
+
+    // 4. 自定义背景时头部半透明
+    var headers = document.querySelectorAll('#dream-main-page .dream-header, #dream-chat-page .dream-header');
     for (var j = 0; j < headers.length; j++) {
         if (headers[j]) {
             headers[j].style.background = bgImage ? 'transparent' : '';
