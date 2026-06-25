@@ -25284,12 +25284,24 @@ function applyDreamBackground() {
         }
     }
 
-    // 2. 梦境聊天页：设置到 #dream-chat-bg 背景层（它覆盖整个页面）
+    // 2. 梦境聊天页：同时设置到页面本身和背景层
+    var chatPage = document.getElementById('dream-chat-page');
     var chatBg = document.getElementById('dream-chat-bg');
-    if (chatBg) {
-        if (bgImage) {
+    if (bgImage) {
+        // 页面本身要有背景，这样透明底栏才能透出图片
+        if (chatPage) {
+            chatPage.style.background = bgColor + ' url(' + bgImage + ') center/cover no-repeat';
+        }
+        // bg 层保持全幅覆盖
+        if (chatBg) {
             chatBg.style.background = bgColor + ' url(' + bgImage + ') center/cover no-repeat';
-        } else {
+        }
+    } else {
+        if (chatPage) {
+            chatPage.style.background = bgColor;
+            chatPage.style.backgroundImage = '';
+        }
+        if (chatBg) {
             chatBg.style.background = bgColor;
             chatBg.style.backgroundImage = '';
         }
