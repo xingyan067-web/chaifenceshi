@@ -40356,7 +40356,7 @@ document.addEventListener('click', (e) => {
             } else {
                 el.style.color = '#AAA';
             }
-            if (isToday) { el.style.outline = '2px solid #1A1A1A'; el.style.outlineOffset = '-1px'; }
+            if (isToday) { el.style.outline = '2px solid #1A1A1A'; el.style.outlineOffset = '-1px'; el.style.fontWeight = '700'; }
             el.textContent = d;
             el.setAttribute('data-day', d);
             el.setAttribute('data-mins', mins);
@@ -40373,6 +40373,18 @@ document.addEventListener('click', (e) => {
     };
 
     window.raSelectDay = function(day, mins) {
+        // 移除之前的选中样式
+        var prevSelected = document.querySelector('.ra-cal-day-selected');
+        if (prevSelected) { prevSelected.classList.remove('ra-cal-day-selected'); prevSelected.style.boxShadow = ''; }
+        // 标记当前选中
+        var allDays = document.querySelectorAll('#ra-cal-days > div');
+        for (var i = 0; i < allDays.length; i++) {
+            if (allDays[i].getAttribute('data-day') === day) {
+                allDays[i].classList.add('ra-cal-day-selected');
+                allDays[i].style.boxShadow = '0 0 0 2px #1A1A1A';
+                break;
+            }
+        }
         document.getElementById('ra-detail-date').textContent = raCalMonth + '月' + day + '日';
         document.getElementById('ra-detail-time').textContent = mins + '分钟';
         // 获取当日阅读书目
@@ -40396,7 +40408,21 @@ document.addEventListener('click', (e) => {
     };
 
     // ===== UI 2.0 我的页面 =====
+    window.raEditNickname = function() {
+        var current = localStorage.getItem('ra_nickname') || '读者昵称';
+        var name = prompt('修改昵称:', current);
+        if (name && name.trim()) {
+            localStorage.setItem('ra_nickname', name.trim());
+            document.getElementById('ra-profile-name').textContent = name.trim();
+        }
+    };
+
     function raRefreshMyPage() {
+        // 加载昵称
+        var nickname = localStorage.getItem('ra_nickname') || '读者昵称';
+        var nameEl = document.getElementById('ra-profile-name');
+        if (nameEl) nameEl.textContent = nickname;
+        // 统计阅读时长
         var state = getReadingState();
         var totalMin = 0;
         for (var key in state) {
@@ -40415,47 +40441,87 @@ document.addEventListener('click', (e) => {
         else if (action === 'charreview') { alert('char的书评功能开发中...'); }
     };
 
-    // ===== UI 2.0 主题设置 (localStorage) =====
-    function raGetTheme() {
-        try { return JSON.parse(localStorage.getItem('ra_theme') || '{}'); } catch(e) { return {}; }
+    // ===== UI 2.0 主题设置 (预设系统) =====
+    function raGetAllPresets() {
+        try { return JSON.parse(localStorage.getItem('ra_theme_presets') || '[]'); } catch(e) { return []; }
     }
-    function raSaveTheme(t) {
-        localStorage.setItem('ra_theme', JSON.stringify(t));
-        raApplyTheme();
+    function raSaveAllPresets(presets) {
+        localStorage.setItem('ra_theme_presets', JSON.stringify(presets));
+    }
+    function raGetActivePresetId() {
+        return localStorage.getItem('ra_active_preset_id') || '';
+    }
+    function raSetActivePresetId(id) {
+        localStorage.setItem('ra_active_preset_id', id);
+    }
+    function raGetActivePreset() {
+        var presets = raGetAllPresets();
+        var activeId = raGetActivePresetId();
+        for (var i = 0; i < presets.length; i++) {
+            if (presets[i].id === activeId) return presets[i];
+        }
+        return null;
     }
     function raApplyTheme() {
-        var t = raGetTheme();
-        var bg = t.bgColor || '#F8F8F8';
+        var t = raGetActivePreset();
+        var bg = (t && t.bgColor) ? t.bgColor : '#F8F8F8';
+        var font = (t && t.fontFamily) ? t.fontFamily : '';
         var pages = document.querySelectorAll('#bookshelf-page, #reading-stats-page, #ra-my-page');
         for (var i = 0; i < pages.length; i++) {
-            if (pages[i]) pages[i].style.background = bg;
-        }
-        var statsPage = document.getElementById('reading-stats-page');
-        var myPage = document.getElementById('ra-my-page');
-        if (myPage) myPage.style.background = bg;
-        var bodyBg = t.bodyColor || '#D5D5D5';
-        if (t.bodyBgImage) {
-            document.body.style.backgroundImage = "url('" + t.bodyBgImage + "')";
-            document.body.style.backgroundSize = 'cover';
-        }
-        if (t.fontFamily) {
-            var pages2 = document.querySelectorAll('#bookshelf-page, #reading-stats-page, #ra-my-page, #reading-page');
-            for (var j = 0; j < pages2.length; j++) {
-                if (pages2[j]) pages2[j].style.fontFamily = t.fontFamily;
-            }
+            if (pages[i]) { pages[i].style.background = bg; if (font) pages[i].style.fontFamily = font; }
         }
     }
 
     window.raOpenThemeSettings = function() {
-        var t = raGetTheme();
-        var choice = prompt('主题设置:\n1. 修改背景色\n2. 修改字体\n\n当前背景色: ' + (t.bgColor || '#F8F8F8') + '\n当前字体: ' + (t.fontFamily || '系统默认') + '\n\n输入数字选择:');
+        var presets = raGetAllPresets();
+        var activeId = raGetActivePresetId();
+        var menu = '主题预设 (' + presets.length + '个):\n';
+        for (var i = 0; i < presets.length; i++) {
+            menu += (i + 1) + '. ' + presets[i].name + (presets[i].id === activeId ? ' [当前]' : '') + '\n';
+        }
+        menu += '\nN. 新建预设\nD. 删除预设\nS. 切换预设';
+        var choice = prompt(menu);
         if (!choice) return;
-        if (choice === '1') {
-            var color = prompt('输入背景色 (如 #F8F8F8 或 #FFFFFF):', t.bgColor || '#F8F8F8');
-            if (color) { t.bgColor = color; raSaveTheme(t); }
-        } else if (choice === '2') {
-            var font = prompt('输入字体名称 (如 serif, sans-serif, 或留空恢复默认):', t.fontFamily || '');
-            if (font !== null) { t.fontFamily = font || ''; raSaveTheme(t); }
+        if (choice.toUpperCase() === 'N') {
+            var name = prompt('预设名称:');
+            if (!name) return;
+            var bgColor = prompt('背景色 (如 #F8F8F8):', '#F8F8F8');
+            if (!bgColor) return;
+            var fontFamily = prompt('字体 (如 serif, 留空=默认):', '');
+            var preset = { id: 'p_' + Date.now(), name: name, bgColor: bgColor, fontFamily: fontFamily || '' };
+            presets.push(preset);
+            raSaveAllPresets(presets);
+            raSetActivePresetId(preset.id);
+            raApplyTheme();
+            alert('预设「' + name + '」已保存并应用');
+        } else if (choice.toUpperCase() === 'D') {
+            if (presets.length === 0) { alert('没有预设可删除'); return; }
+            var idx = parseInt(prompt('输入要删除的预设编号 (1-' + presets.length + '):')) - 1;
+            if (idx >= 0 && idx < presets.length) {
+                var delName = presets[idx].name;
+                presets.splice(idx, 1);
+                raSaveAllPresets(presets);
+                if (presets[idx] && presets[idx].id === activeId || idx >= presets.length) {
+                    raSetActivePresetId(presets.length > 0 ? presets[0].id : '');
+                }
+                raApplyTheme();
+                alert('预设「' + delName + '」已删除');
+            }
+        } else if (choice.toUpperCase() === 'S') {
+            if (presets.length === 0) { alert('没有预设可切换，请先新建'); return; }
+            var idx = parseInt(prompt('输入要切换的预设编号 (1-' + presets.length + '):')) - 1;
+            if (idx >= 0 && idx < presets.length) {
+                raSetActivePresetId(presets[idx].id);
+                raApplyTheme();
+                alert('已切换到「' + presets[idx].name + '」');
+            }
+        } else {
+            var idx2 = parseInt(choice) - 1;
+            if (idx2 >= 0 && idx2 < presets.length) {
+                raSetActivePresetId(presets[idx2].id);
+                raApplyTheme();
+                alert('已切换到「' + presets[idx2].name + '」');
+            }
         }
     };
 

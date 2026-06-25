@@ -2049,7 +2049,7 @@
         #readingModal.open { transform: none !important; }
 
         /* ===== UI 2.0 拍立得卡片 ===== */
-        .ra-card { background: #FFFFFF; border-radius: 12px; padding: 6px 6px 14px 6px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.2s; cursor: pointer; }
+        .ra-card { background: #FFFFFF; border-radius: 12px; padding: 6px 6px 14px 6px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.2s; cursor: pointer; min-width: 0; overflow: hidden; }
         .ra-card:active { transform: scale(0.97); }
         .ra-card-top-bar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
         .ra-card-pill { font-size: 8px; font-weight: 600; color: #8E8E8E; background: #F8F8F8; border: 1px solid #E5E5E5; border-radius: 20px; padding: 2px 8px; letter-spacing: 0.5px; text-transform: uppercase; }
@@ -2098,7 +2098,7 @@
                 <div id="bookshelf-page" style="display:none; width:100%; height:100%; flex-direction:column; background:#F8F8F8; overflow:hidden;">
                     <div class="ra-page-title-area" style="padding: 60px 24px 10px; flex-shrink: 0;">
                         <div class="ra-page-title-en" style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8E8E8E; margin-bottom: 2px;">Reading Archive</div>
-                        <div class="ra-page-title-cn" style="font-size: 28px; font-weight: 800; color: #1A1A1A;">书架</div>
+                        <div class="ra-page-title-cn" style="font-size: 28px; font-weight: 800; color: #1A1A1A; cursor: pointer;" onclick="closeBookshelf()">书架</div>
                     </div>
                     <!-- 分组 Tab -->
                     <div class="ra-group-tabs" id="ra-group-tabs">
@@ -2164,7 +2164,7 @@
                     </div>
                     <div class="ra-profile-card" style="margin: 0 20px; padding: 24px; background: #FFFFFF; border-radius: 16px; border: 1px solid #E5E5E5; text-align: center;">
                         <div class="ra-profile-avatar" style="width: 64px; height: 64px; border-radius: 50%; background: #1A1A1A; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; margin: 0 auto 12px;">Me</div>
-                        <div class="ra-profile-name" style="font-size: 18px; font-weight: 600; color: #1A1A1A;" id="ra-profile-name">读者昵称</div>
+                        <div class="ra-profile-name" style="font-size: 18px; font-weight: 600; color: #1A1A1A; cursor: pointer;" id="ra-profile-name" onclick="raEditNickname()">读者昵称</div>
                         <div class="ra-profile-stat" style="font-size: 12px; color: #8E8E8E; margin-top: 4px;" id="ra-profile-stat">总阅读时长：0 小时</div>
                     </div>
                     <div class="ra-menu-list" style="margin: 16px 20px; background: #FFFFFF; border-radius: 16px; border: 1px solid #E5E5E5; overflow: hidden;">
