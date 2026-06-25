@@ -2053,7 +2053,7 @@
         .ra-card:active { transform: scale(0.97); }
         .ra-card-top-bar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
         .ra-card-pill { font-size: 8px; font-weight: 600; color: #8E8E8E; background: #F8F8F8; border: 1px solid #E5E5E5; border-radius: 20px; padding: 2px 8px; letter-spacing: 0.5px; text-transform: uppercase; }
-        .ra-card-cover { position: relative; height: 160px; background: #EEEEEE; border-radius: 6px; border: 1px solid #E5E5E5; }
+        .ra-card-cover { position: relative; aspect-ratio: 3 / 4; background: #EEEEEE; border-radius: 6px; border: 1px solid #E5E5E5; }
         .ra-card-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
         .ra-card-tape { position: absolute; top: -4px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 45px; height: 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); border: 1px solid rgba(0,0,0,0.04); z-index: 10; }
         .ra-card-cover-svg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; opacity: 0.25; }
@@ -2061,6 +2061,9 @@
         .ra-card-info { padding: 8px 4px 0; }
         .ra-card-title { font-size: 14px; font-weight: 600; color: #1A1A1A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .ra-card-author { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-top: 2px; }
+
+        /* ===== UI 2.0 日历方块 ===== */
+        #ra-cal-days > div { background: #F0F0F0; border-radius: 4px; }
 
         /* ===== UI 2.0 弹窗 ===== */
         .ra-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(248, 248, 248, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 500; }
@@ -2180,6 +2183,18 @@
                         <div class="ra-menu-item" onclick="raMenuAction('charreview')" style="display: flex; align-items: center; padding: 16px 20px; cursor: pointer; font-size: 15px; color: #1A1A1A;">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2" style="margin-right: 12px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>char的书评
                         </div>
+                    </div>
+                </div>
+
+                <!-- ======== 主题设置页 (UI 2.0) ======== -->
+                <div id="ra-theme-page" style="display:none; width:100%; height:100%; flex-direction:column; background:#F8F8F8; overflow-y:auto;">
+                    <div class="ra-page-title-area" style="padding: 60px 24px 10px; flex-shrink: 0;">
+                        <div class="ra-page-title-en" style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8E8E8E; margin-bottom: 2px;">Theme Presets</div>
+                        <div class="ra-page-title-cn" style="font-size: 28px; font-weight: 800; color: #1A1A1A; cursor: pointer;" onclick="raSwitchPage('my', document.querySelector('.ra-dock-item[data-page=my]'))">主题设置</div>
+                    </div>
+                    <div id="ra-theme-preset-list" style="margin: 0 20px; display: flex; flex-direction: column; gap: 10px;"></div>
+                    <div style="padding: 16px 20px;">
+                        <button onclick="raThemeNewPreset()" style="width: 100%; padding: 14px; background: #FFFFFF; border: 1px dashed #D0D0D0; border-radius: 12px; font-size: 14px; color: #8E8E8E; cursor: pointer;">+ 新建预设</button>
                     </div>
                 </div>
 

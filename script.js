@@ -39920,6 +39920,8 @@ document.addEventListener('click', (e) => {
         document.getElementById('reading-stats-page').style.display = 'none';
         var myPage = document.getElementById('ra-my-page');
         if (myPage) myPage.style.display = 'none';
+        var themePage = document.getElementById('ra-theme-page');
+        if (themePage) themePage.style.display = 'none';
         document.getElementById('reading-page').style.display = 'none';
         var dock = document.getElementById('ra-dock');
         if (dock) dock.style.display = 'flex';
@@ -40193,6 +40195,8 @@ document.addEventListener('click', (e) => {
         document.getElementById('reading-stats-page').style.display = 'none';
         var myPage = document.getElementById('ra-my-page');
         if (myPage) myPage.style.display = 'none';
+        var themePage = document.getElementById('ra-theme-page');
+        if (themePage) themePage.style.display = 'none';
         document.getElementById('reading-page').style.display = 'none';
         if (page === 'bookshelf') {
             document.getElementById('bookshelf-page').style.display = 'flex';
@@ -40203,6 +40207,9 @@ document.addEventListener('click', (e) => {
         } else if (page === 'my') {
             if (myPage) myPage.style.display = 'flex';
             raRefreshMyPage();
+        } else if (page === 'theme') {
+            if (themePage) themePage.style.display = 'flex';
+            raRenderThemePresets();
         }
         raSyncDockActive(page);
         raCloseBookPopup();
@@ -40356,8 +40363,13 @@ document.addEventListener('click', (e) => {
             } else {
                 el.style.color = '#AAA';
             }
-            if (isToday) { el.style.outline = '2px solid #1A1A1A'; el.style.outlineOffset = '-1px'; el.style.fontWeight = '700'; }
-            el.textContent = d;
+            if (isToday) {
+                el.style.flexDirection = 'column';
+                el.style.fontWeight = '700';
+                el.innerHTML = '<span>' + d + '</span><span style="display:block;width:4px;height:4px;border-radius:50%;background:#1A1A1A;margin-top:2px;flex-shrink:0;"></span>';
+            } else {
+                el.textContent = d;
+            }
             el.setAttribute('data-day', d);
             el.setAttribute('data-mins', mins);
             el.onclick = function() { raSelectDay(this.getAttribute('data-day'), this.getAttribute('data-mins')); };
@@ -40375,13 +40387,14 @@ document.addEventListener('click', (e) => {
     window.raSelectDay = function(day, mins) {
         // 移除之前的选中样式
         var prevSelected = document.querySelector('.ra-cal-day-selected');
-        if (prevSelected) { prevSelected.classList.remove('ra-cal-day-selected'); prevSelected.style.boxShadow = ''; }
+        if (prevSelected) { prevSelected.classList.remove('ra-cal-day-selected'); prevSelected.style.outline = ''; prevSelected.style.outlineOffset = ''; }
         // 标记当前选中
         var allDays = document.querySelectorAll('#ra-cal-days > div');
         for (var i = 0; i < allDays.length; i++) {
             if (allDays[i].getAttribute('data-day') === day) {
                 allDays[i].classList.add('ra-cal-day-selected');
-                allDays[i].style.boxShadow = '0 0 0 2px #1A1A1A';
+                allDays[i].style.outline = '2px solid #1A1A1A';
+                allDays[i].style.outlineOffset = '1px';
                 break;
             }
         }
@@ -40466,62 +40479,81 @@ document.addEventListener('click', (e) => {
         var t = raGetActivePreset();
         var bg = (t && t.bgColor) ? t.bgColor : '#F8F8F8';
         var font = (t && t.fontFamily) ? t.fontFamily : '';
-        var pages = document.querySelectorAll('#bookshelf-page, #reading-stats-page, #ra-my-page');
+        var pages = document.querySelectorAll('#bookshelf-page, #reading-stats-page, #ra-my-page, #ra-theme-page');
         for (var i = 0; i < pages.length; i++) {
             if (pages[i]) { pages[i].style.background = bg; if (font) pages[i].style.fontFamily = font; }
         }
     }
 
     window.raOpenThemeSettings = function() {
+        raSwitchPage('theme', null);
+    };
+
+    function raRenderThemePresets() {
+        var list = document.getElementById('ra-theme-preset-list');
+        if (!list) return;
         var presets = raGetAllPresets();
         var activeId = raGetActivePresetId();
-        var menu = '主题预设 (' + presets.length + '个):\n';
-        for (var i = 0; i < presets.length; i++) {
-            menu += (i + 1) + '. ' + presets[i].name + (presets[i].id === activeId ? ' [当前]' : '') + '\n';
+        list.innerHTML = '';
+        if (presets.length === 0) {
+            list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#999;font-size:13px;">暂无预设，点击下方按钮新建</div>';
+            return;
         }
-        menu += '\nN. 新建预设\nD. 删除预设\nS. 切换预设';
-        var choice = prompt(menu);
-        if (!choice) return;
-        if (choice.toUpperCase() === 'N') {
-            var name = prompt('预设名称:');
-            if (!name) return;
-            var bgColor = prompt('背景色 (如 #F8F8F8):', '#F8F8F8');
-            if (!bgColor) return;
-            var fontFamily = prompt('字体 (如 serif, 留空=默认):', '');
-            var preset = { id: 'p_' + Date.now(), name: name, bgColor: bgColor, fontFamily: fontFamily || '' };
-            presets.push(preset);
-            raSaveAllPresets(presets);
-            raSetActivePresetId(preset.id);
+        for (var i = 0; i < presets.length; i++) {
+            var p = presets[i];
+            var isActive = p.id === activeId;
+            var card = document.createElement('div');
+            card.style.cssText = 'background:#FFFFFF;border-radius:14px;padding:16px;border:1px solid ' + (isActive ? '#1A1A1A' : '#E5E5E5') + ';display:flex;align-items:center;gap:12px;cursor:pointer;';
+            card.onclick = function(idx) {
+                return function() { raThemeSwitchPreset(idx); };
+            }(i);
+            card.innerHTML =
+                '<div style="width:36px;height:36px;border-radius:50%;background:' + escapeHtml(p.bgColor || '#F8F8F8') + ';border:1px solid #E5E5E5;flex-shrink:0;"></div>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:14px;font-weight:600;color:#1A1A1A;">' + escapeHtml(p.name) + (isActive ? ' <span style="font-size:10px;color:#8E8E8E;">[当前]</span>' : '') + '</div>' +
+                    '<div style="font-size:11px;color:#999;margin-top:2px;">' + escapeHtml(p.bgColor || '#F8F8F8') + (p.fontFamily ? ' / ' + p.fontFamily : '') + '</div>' +
+                '</div>' +
+                '<button style="width:28px;height:28px;border-radius:50%;border:1px solid #E5E5E5;background:#fff;color:#999;font-size:14px;cursor:pointer;flex-shrink:0;line-height:28px;text-align:center;padding:0;" onclick="event.stopPropagation();raThemeDeletePreset(\'' + p.id + '\');">×</button>';
+            list.appendChild(card);
+        }
+    }
+
+    window.raThemeNewPreset = function() {
+        var name = prompt('预设名称:');
+        if (!name || !name.trim()) return;
+        var bgColor = prompt('背景色 (如 #F8F8F8):', '#F8F8F8');
+        if (!bgColor || !bgColor.trim()) return;
+        var fontFamily = prompt('字体 (如 serif, 留空=默认):', '');
+        var presets = raGetAllPresets();
+        var preset = { id: 'p_' + Date.now(), name: name.trim(), bgColor: bgColor.trim(), fontFamily: fontFamily ? fontFamily.trim() : '' };
+        presets.push(preset);
+        raSaveAllPresets(presets);
+        raSetActivePresetId(preset.id);
+        raApplyTheme();
+        raRenderThemePresets();
+    };
+
+    window.raThemeDeletePreset = function(id) {
+        var presets = raGetAllPresets();
+        var activeId = raGetActivePresetId();
+        var newPresets = [];
+        for (var i = 0; i < presets.length; i++) {
+            if (presets[i].id !== id) newPresets.push(presets[i]);
+        }
+        raSaveAllPresets(newPresets);
+        if (activeId === id) {
+            raSetActivePresetId(newPresets.length > 0 ? newPresets[0].id : '');
+        }
+        raApplyTheme();
+        raRenderThemePresets();
+    };
+
+    window.raThemeSwitchPreset = function(idx) {
+        var presets = raGetAllPresets();
+        if (idx >= 0 && idx < presets.length) {
+            raSetActivePresetId(presets[idx].id);
             raApplyTheme();
-            alert('预设「' + name + '」已保存并应用');
-        } else if (choice.toUpperCase() === 'D') {
-            if (presets.length === 0) { alert('没有预设可删除'); return; }
-            var idx = parseInt(prompt('输入要删除的预设编号 (1-' + presets.length + '):')) - 1;
-            if (idx >= 0 && idx < presets.length) {
-                var delName = presets[idx].name;
-                presets.splice(idx, 1);
-                raSaveAllPresets(presets);
-                if (presets[idx] && presets[idx].id === activeId || idx >= presets.length) {
-                    raSetActivePresetId(presets.length > 0 ? presets[0].id : '');
-                }
-                raApplyTheme();
-                alert('预设「' + delName + '」已删除');
-            }
-        } else if (choice.toUpperCase() === 'S') {
-            if (presets.length === 0) { alert('没有预设可切换，请先新建'); return; }
-            var idx = parseInt(prompt('输入要切换的预设编号 (1-' + presets.length + '):')) - 1;
-            if (idx >= 0 && idx < presets.length) {
-                raSetActivePresetId(presets[idx].id);
-                raApplyTheme();
-                alert('已切换到「' + presets[idx].name + '」');
-            }
-        } else {
-            var idx2 = parseInt(choice) - 1;
-            if (idx2 >= 0 && idx2 < presets.length) {
-                raSetActivePresetId(presets[idx2].id);
-                raApplyTheme();
-                alert('已切换到「' + presets[idx2].name + '」');
-            }
+            raRenderThemePresets();
         }
     };
 
