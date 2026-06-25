@@ -39897,6 +39897,31 @@ document.addEventListener('click', (e) => {
         catch(e) { return []; }
     }
     function saveAnnotations(arr) { localStorage.setItem('ra_annotations', JSON.stringify(arr)); }
+    window.deleteAnnotation = function(idx, btn) {
+        if (!confirm('确定要删除这条点评吗？')) return;
+        var annotations = getAnnotations();
+        if (idx >= 0 && idx < annotations.length) {
+            annotations.splice(idx, 1);
+            saveAnnotations(annotations);
+            // 移除气泡DOM
+            var bubble = btn.closest('.char-annotation');
+            if (bubble) bubble.remove();
+            // 刷新所有批注的 index 属性
+            var allBubbles = document.querySelectorAll('.char-annotation[data-ann-idx]');
+            for (var i = 0; i < allBubbles.length; i++) {
+                var currentIdx = parseInt(allBubbles[i].getAttribute('data-ann-idx'));
+                if (currentIdx > idx) {
+                    allBubbles[i].setAttribute('data-ann-idx', currentIdx - 1);
+                    // 更新按钮中的 idx
+                    var btns = allBubbles[i].querySelectorAll('button');
+                    for (var j = 0; j < btns.length; j++) {
+                        var onclick = btns[j].getAttribute('onclick') || '';
+                        btns[j].setAttribute('onclick', onclick.replace(/\d+/, String(currentIdx - 1)));
+                    }
+                }
+            }
+        }
+    };
 
     function getSettings() {
         try { return JSON.parse(localStorage.getItem('ra_settings') || '{}'); }
@@ -40245,7 +40270,7 @@ document.addEventListener('click', (e) => {
             cover.style.backgroundImage = "url('" + book.coverImage + "')";
             cover.style.backgroundColor = '';
         } else {
-            cover.style.backgroundImage = 'none';
+            cover.style.backgroundImage = "url('https://i.postimg.cc/44z8H8zv/IMG-20260509-054649.jpg')";
             cover.style.backgroundColor = '#EEEEEE';
         }
         // 填充详情列表
@@ -41426,7 +41451,7 @@ document.addEventListener('click', (e) => {
                 }
             }
         }
-        var replyBtn = typeof annotationIdx === 'number' ? '<div style="margin-top:6px;text-align:right;"><button onclick="replyToAnnotation(' + annotationIdx + ',this)" style="border:none;background:none;color:#bf9e6a;font-size:12px;cursor:pointer;">回复</button></div>' : '';
+        var replyBtn = typeof annotationIdx === 'number' ? '<div style="margin-top:6px;text-align:right;"><button onclick="deleteAnnotation(' + annotationIdx + ',this)" style="border:none;background:none;color:#ccc;font-size:12px;cursor:pointer;margin-right:8px;">删除</button><button onclick="replyToAnnotation(' + annotationIdx + ',this)" style="border:none;background:none;color:#bf9e6a;font-size:12px;cursor:pointer;">回复</button></div>' : '';
         bubble.innerHTML =
             '<div class="char-annotation-header"><div class="char-annotation-avatar">' + avatarHtml + '</div><div class="char-annotation-name">' + escapeHtml(charName || '角色') + '</div></div>' +
             '<div>' + escapeHtml(content) + '</div>' +
