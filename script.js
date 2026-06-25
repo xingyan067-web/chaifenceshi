@@ -24555,8 +24555,14 @@ function changeBrightness(val) {
 function saveBrightness() {
     const val = document.getElementById('brightness-slider').value;
     localStorage.setItem('ios_theme_brightness', val);
+    // 同时保存背景 URL（如果手动输入了）
+    var urlInput = document.getElementById('dream-bg-url-input');
+    if (urlInput && urlInput.value && urlInput.value !== '[本地图片]') {
+        dreamState.bgImage = urlInput.value.trim();
+    }
+    dreamSaveData();
+    applyDreamBackground();
     closeBrightnessModal();
-    alert("亮度已保存！");
 }
 
 // 页面加载时初始化亮度
