@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>阅读 UI 2.0 预览</title>
+<style>
+  :root {
+    --bg-outer: #D5D5D5;
+    --bg-app: #F8F8F8;
+    --surface: #FFFFFF;
+    --placeholder: #EEEEEE;
+    --text-primary: #1A1A1A;
+    --text-secondary: #8E8E8E;
+    --border: #E5E5E5;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: var(--bg-outer);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== App 容器 ===== */
+  .app {
+    width: 390px;
+    height: 844px;
+    background: var(--bg-app);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+
+  /* ===== 页面容器 ===== */
+  .page {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    background: var(--bg-app);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .page.active { display: flex; }
+
+  /* ===== 顶部大标题 (PRD Section 2) ===== */
+  .page-title-area {
+    padding: 60px 24px 10px;
+    flex-shrink: 0;
+  }
+  .page-title-en {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+  }
+  .page-title-cn {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  /* ===== 悬浮岛导航 (PRD Section 4.1) ===== */
+  .floating-dock {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 100px;
+    padding: 6px;
+    display: flex;
+    gap: 2px;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+  }
+  .dock-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25,0.8,0.25,1);
+    font-size: 13px;
+    color: #999;
+    white-space: nowrap;
+  }
+  .dock-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .dock-item .dock-label { display: none; }
+  .dock-item.active {
+    background: var(--text-primary);
+    color: #fff;
+  }
+  .dock-item.active .dock-label { display: inline; }
+
+  /* ===== 书架卡片网格 ===== */
+  .bookshelf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 20px 20px 120px;
+    flex: 1;
+    overflow-y: auto;
+    align-content: start;
+  }
+
+  /* ===== 卡片: 拍立得 (PRD Section 2) ===== */
+  .card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 6px 6px 14px 6px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+  }
+  .card:active { transform: scale(0.97); }
+
+  .card-top-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+  }
+  .ui-btn-pill {
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-app);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .cover {
+    position: relative;
+    height: 160px;
+    background: var(--placeholder);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .cover img {
+    width: 100%; height: 100%; object-fit: cover;
+    border-radius: 6px;
+  }
+
+  /* 半透明胶带 (PRD) */
+  .washi-tape {
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    width: 45px;
+    height: 14px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border: 1px solid rgba(0,0,0,0.04);
+    z-index: 10;
+  }
+
+  /* 中心装饰 */
+  .cover-center-graphic {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    opacity: 0.25;
+  }
+
+  /* 破边标签 (PRD: bottom:-6px 压线) */
+  .cover-tag {
+    position: absolute;
+    bottom: 10px;
+    left: 8px;
+    background: var(--surface);
+    border: 1px solid var(--text-primary);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: 2px 10px;
+    border-radius: 10px;
+    z-index: 20;
+  }
+
+  /* 底部微排版 */
+  .card-info { padding: 8px 4px 0; }
+  .card-book-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-book-author {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #999;
+    margin-top: 2px;
+  }
+
+  /* ===== 弹窗 (PRD Section 3) ===== */
+  .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(248, 248, 248, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 200; }
+  .overlay.show { display: flex; }
+  .popup-wrapper { display: flex; flex-direction: column; align-items: center; width: 290px; }
+
+  /* BOOK INFO 小标签 */
+  .floating-tag { background: #FFFFFF; padding: 6px 14px; border-radius: 20px; font-size: 10px; color: #1A1A1A; font-weight: 600; letter-spacing: 1px; box-shadow: 0 8px 16px rgba(0,0,0,0.06); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .floating-tag::before { content: ''; display: block; width: 6px; height: 6px; background: #1A1A1A; border-radius: 50%; }
+
+  /* 弹窗主卡片 (包含正反面) */
+  .popup-main-part { position: relative; width: 100%; height: 380px; background: #FFFFFF; border-radius: 36px; padding: 30px 24px; box-sizing: border-box; box-shadow: 0 24px 48px rgba(0,0,0,0.08); overflow: hidden; }
+
+  /* 正面：封面 */
+  .popup-front { width: 100%; display: flex; flex-direction: column; align-items: center; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+  .popup-cover { width: 110px; height: 150px; background-color: #EEEEEE; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+  .popup-title { font-size: 18px; font-weight: 800; color: #1A1A1A; text-align: center; margin-bottom: 8px; }
+  .popup-author { font-size: 12px; color: #8E8E8E; }
+
+  /* 反面：详情 */
+  .popup-back { position: absolute; top: 30px; left: 0; width: 100%; padding: 0 24px; box-sizing: border-box; opacity: 0; transform: translateX(40px); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; }
+  .popup-back-book-title { font-size: 16px; font-weight: 700; color: #1A1A1A; text-align: center; margin-bottom: 6px; }
+  .back-title { font-size: 10px; font-weight: 600; letter-spacing: 2px; color: #999; text-align: center; margin-bottom: 20px; }
+  .details-list { display: flex; flex-direction: column; gap: 16px; }
+  .detail-row { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px dashed #E5E5E5; padding-bottom: 6px; }
+  .detail-label { font-size: 12px; color: #8E8E8E; }
+  .detail-val { font-size: 14px; font-weight: 600; color: #1A1A1A; }
+
+  /* 触发翻转的逻辑类 */
+  .popup-main-part.show-details .popup-front { opacity: 0; transform: translateX(-40px); pointer-events: none; }
+  .popup-main-part.show-details .popup-back { opacity: 1; transform: translateX(0); pointer-events: auto; }
+
+  /* 操作栏 (Action Bubble) */
+  .action-bubble {
+    position: absolute; bottom: 24px; left: 24px; width: calc(100% - 48px);
+    background: #F5F5F5; border-radius: 30px; padding: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-sizing: border-box;
+  }
+  .circle-btn {
+    width: 42px; height: 42px;
+    background: #FFFFFF; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    color: #1A1A1A; font-size: 18px; font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.04); cursor: pointer;
+  }
+  .btn-go { font-size: 13px; font-weight: 800; letter-spacing: 1px; }
+  .main-btn { flex: 1; text-align: center; font-size: 15px; font-weight: 700; color: #1A1A1A; background: transparent; border: none; cursor: pointer; }
+
+  /* ===== 统计页 (PRD Section 4.2) ===== */
+  .calendar-widget { padding: 0 20px; }
+  .calendar-month-nav { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 16px; }
+  .cal-nav-btn { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--text-primary); }
+  .cal-month-label { font-size: 15px; font-weight: 600; color: var(--text-primary); min-width: 100px; text-align: center; }
+  .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 10px; color: #999; margin-bottom: 6px; }
+  .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 4px; cursor: pointer; color: #AAA; }
+  .cal-day.has-data { color: var(--text-primary); }
+  .cal-day.lvl-1 { background: #E8E8E8; }
+  .cal-day.lvl-2 { background: #D0D0D0; }
+  .cal-day.lvl-3 { background: #B0B0B0; color: #fff; }
+  .cal-day.lvl-4 { background: #1A1A1A; color: #fff; font-weight: 600; }
+  .cal-day.today { outline: 2px solid var(--text-primary); outline-offset: -1px; }
+  .cal-day.empty { cursor: default; }
+
+  .day-detail-panel { margin: 16px 20px; padding: 20px; background: var(--surface); border-radius: 16px; border: 1px solid var(--border); }
+  .day-detail-date { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; }
+  .day-detail-stat { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .day-detail-review { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .review-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 4px; }
+  .review-text { font-size: 13px; color: var(--text-primary); line-height: 1.6; }
+
+  /* ===== 我的页面 (PRD Section 4.3) ===== */
+  .profile-card { margin: 0 20px; padding: 24px; background: var(--surface); border-radius: 16px; border: 1px solid var(--border); text-align: center; }
+  .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--text-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; margin: 0 auto 12px; }
+  .profile-name { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+  .profile-stat { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .menu-list { margin: 16px 20px; background: var(--surface); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
+  .menu-item { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 15px; color: var(--text-primary); }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item svg { margin-right: 12px; flex-shrink: 0; }
+  .menu-item:active { background: var(--bg-app); }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ==================== 书架页 ==================== -->
+  <div class="page active" id="page-bookshelf">
+    <div class="page-title-area">
+      <div class="page-title-en">Reading Archive</div>
+      <div class="page-title-cn">书架</div>
+    </div>
+
+    <div class="bookshelf-grid" id="bookshelf-grid">
+      <!-- Card 1: 有自定义封面 -->
+      <div class="card" onclick="openDetail('看不见的城市', 'SOULS, BETWEEN LINES.', 'End Meeting', 'Beloved', 'https://i.postimg.cc/44z8H8zv/IMG-20260509-054649.jpg')">
+        <div class="card-top-bar"><div class="ui-btn-pill">End Meeting</div></div>
+        <div class="cover">
+          <div class="washi-tape"></div>
+          <img src="https://i.postimg.cc/44z8H8zv/IMG-20260509-054649.jpg" alt="">
+          <div class="cover-tag">Beloved</div>
+        </div>
+        <div class="card-info">
+          <div class="card-book-title">看不见的城市</div>
+          <div class="card-book-author">SOULS, BETWEEN LINES.</div>
+        </div>
+      </div>
+
+      <!-- Card 2: 默认灰底 + SVG花 -->
+      <div class="card" onclick="openDetail('森林里的小屋', 'A CABIN, FAR AWAY.', 'Reading', 'Warm', '')">
+        <div class="card-top-bar"><div class="ui-btn-pill">Reading</div></div>
+        <div class="cover">
+          <div class="washi-tape"></div>
+          <div class="cover-center-graphic">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          </div>
+          <div class="cover-tag">Warm</div>
+        </div>
+        <div class="card-info">
+          <div class="card-book-title">森林里的小屋</div>
+          <div class="card-book-author">A CABIN, FAR AWAY.</div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="card" onclick="openDetail('月光与六便士', 'THE MOON, SILENT.', 'Done', 'Classic', 'https://i.postimg.cc/44z8H8zv/IMG-20260509-054649.jpg')">
+        <div class="card-top-bar"><div class="ui-btn-pill">Done</div></div>
+        <div class="cover">
+          <div class="washi-tape"></div>
+          <img src="https://i.postimg.cc/44z8H8zv/IMG-20260509-054649.jpg" alt="">
+          <div class="cover-tag">Classic</div>
+        </div>
+        <div class="card-info">
+          <div class="card-book-title">月光与六便士</div>
+          <div class="card-book-author">THE MOON, SILENT.</div>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="card" onclick="openDetail('夜航船', 'SAILING, DRIFTING.', 'Want', 'Mood', '')">
+        <div class="card-top-bar"><div class="ui-btn-pill">Want</div></div>
+        <div class="cover">
+          <div class="washi-tape"></div>
+          <div class="cover-center-graphic">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="cover-tag">Mood</div>
+        </div>
+        <div class="card-info">
+          <div class="card-book-title">夜航船</div>
+          <div class="card-book-author">SAILING, DRIFTING.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 悬浮岛导航 -->
+    <div class="floating-dock">
+      <div class="dock-item active" onclick="switchPage('bookshelf', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="dock-label">书架</span>
+      </div>
+      <div class="dock-item" onclick="switchPage('stats', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span class="dock-label">统计</span>
+      </div>
+      <div class="dock-item" onclick="switchPage('profile', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="dock-label">我的</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 统计页 ==================== -->
+  <div class="page" id="page-stats">
+    <div class="page-title-area">
+      <div class="page-title-en">Reading Stats</div>
+      <div class="page-title-cn">统计</div>
+    </div>
+
+    <div class="calendar-widget">
+      <div class="calendar-month-nav">
+        <button class="cal-nav-btn" onclick="changeMonth(-1)">&lt;</button>
+        <span class="cal-month-label" id="cal-month-label">2026年 6月</span>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">&gt;</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+      </div>
+      <div class="cal-days" id="cal-days"></div>
+    </div>
+
+    <div class="day-detail-panel" id="day-detail">
+      <div class="day-detail-date" id="detail-date">6月15日</div>
+      <div class="day-detail-stat">阅读时长：<span id="detail-time">45分钟</span></div>
+      <div class="day-detail-stat">阅读书目：<span id="detail-books">《看不见的城市》</span></div>
+      <div class="day-detail-review">
+        <div class="review-label">我的书评</div>
+        <div class="review-text">"每座城市都是一面镜子，照出我们内心的渴望与恐惧。卡尔维诺用轻盈的笔触，写尽了城市灵魂的重量。"</div>
+      </div>
+      <div class="day-detail-review">
+        <div class="review-label">char的书评</div>
+        <div class="review-text">"马可·波罗说的每一个字都像是从遥远沙漠吹来的风，干燥而温柔。这本书是一座迷宫，但我愿意在里面迷路。"</div>
+      </div>
+    </div>
+
+    <!-- 悬浮岛导航 -->
+    <div class="floating-dock">
+      <div class="dock-item" onclick="switchPage('bookshelf', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="dock-label">书架</span>
+      </div>
+      <div class="dock-item active" onclick="switchPage('stats', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span class="dock-label">统计</span>
+      </div>
+      <div class="dock-item" onclick="switchPage('profile', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="dock-label">我的</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 我的页面 ==================== -->
+  <div class="page" id="page-profile">
+    <div class="page-title-area">
+      <div class="page-title-en">My Library</div>
+      <div class="page-title-cn">我的</div>
+    </div>
+
+    <div class="profile-card">
+      <div class="profile-avatar">Me</div>
+      <div class="profile-name">读者昵称</div>
+      <div class="profile-stat">总阅读时长：128 小时</div>
+    </div>
+
+    <div class="menu-list">
+      <div class="menu-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        网盘备份
+      </div>
+      <div class="menu-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        主题设置
+      </div>
+      <div class="menu-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        我的书评
+      </div>
+      <div class="menu-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A1A1A" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        char的书评
+      </div>
+    </div>
+
+    <!-- 悬浮岛导航 -->
+    <div class="floating-dock">
+      <div class="dock-item" onclick="switchPage('bookshelf', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="dock-label">书架</span>
+      </div>
+      <div class="dock-item" onclick="switchPage('stats', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span class="dock-label">统计</span>
+      </div>
+      <div class="dock-item active" onclick="switchPage('profile', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="dock-label">我的</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 弹窗 ==================== -->
+  <div class="overlay" id="detail-modal" onclick="closeDetail(event)">
+    <div class="popup-wrapper" onclick="event.stopPropagation()">
+      <div class="floating-tag">BOOK INFO</div>
+      <div class="popup-main-part" id="popup-main">
+        <div class="popup-front">
+          <div class="popup-cover" id="popup-cover" style="background-image: url('https://i.postimg.cc/44z8H8zv/IMG-20260509-054649.jpg'); background-size: cover; background-position: center;"></div>
+          <div class="popup-title" id="popup-title">欢迎进入梦境游戏</div>
+          <div class="popup-author" id="popup-author">状态：Beloved</div>
+        </div>
+        <div class="popup-back">
+          <div class="popup-back-book-title" id="popup-back-title">欢迎进入梦境游戏</div>
+          <div class="back-title">DETAILS</div>
+          <div class="details-list">
+            <div class="detail-row"><span class="detail-label">作者</span><span class="detail-val">极简设计记录者</span></div>
+            <div class="detail-row"><span class="detail-label">添加时间</span><span class="detail-val">2026.06.15</span></div>
+            <div class="detail-row"><span class="detail-label">阅读进度</span><span class="detail-val">67%</span></div>
+            <div class="detail-row"><span class="detail-label">来源</span><span class="detail-val">本地导入</span></div>
+          </div>
+        </div>
+        <div class="action-bubble">
+          <div class="circle-btn btn-go" onclick="closeDetail()">GO</div>
+          <button class="main-btn">开始阅读</button>
+          <div class="circle-btn" id="moreBtn" onclick="toggleFlip()">⋯</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchPage(page, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.dock-item').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('detail-modal').classList.remove('show');
+  }
+
+  function openDetail(title, author, pill, tag, coverUrl) {
+    document.getElementById('popup-title').textContent = title;
+    document.getElementById('popup-back-title').textContent = title;
+    document.getElementById('popup-author').textContent = '状态：' + tag;
+    var cover = document.getElementById('popup-cover');
+    if (coverUrl) {
+      cover.style.backgroundImage = "url('" + coverUrl + "')";
+      cover.style.backgroundColor = '';
+    } else {
+      cover.style.backgroundImage = 'none';
+      cover.style.backgroundColor = '#EEEEEE';
+    }
+    document.getElementById('popup-main').classList.remove('show-details');
+    document.getElementById('moreBtn').textContent = '⋯';
+    document.getElementById('detail-modal').classList.add('show');
+  }
+
+  function closeDetail(e) {
+    if (e && e.target !== document.getElementById('detail-modal')) return;
+    document.getElementById('detail-modal').classList.remove('show');
+  }
+
+  function toggleFlip() {
+    var main = document.getElementById('popup-main');
+    var btn = document.getElementById('moreBtn');
+    main.classList.toggle('show-details');
+    btn.textContent = main.classList.contains('show-details') ? '×' : '⋯';
+  }
+
+  var calYear = 2026, calMonth = 6;
+
+  function renderCalendar() {
+    document.getElementById('cal-month-label').textContent = calYear + '年 ' + calMonth + '月';
+    var grid = document.getElementById('cal-days');
+    grid.innerHTML = '';
+    var firstDay = new Date(calYear, calMonth - 1, 1).getDay();
+    var daysInMonth = new Date(calYear, calMonth, 0).getDate();
+    var startOffset = firstDay === 0 ? 6 : firstDay - 1;
+    for (var i = 0; i < startOffset; i++) {
+      grid.appendChild(createDayEl('', 'empty'));
+    }
+    var seed = calYear * 100 + calMonth;
+    for (var d = 1; d <= daysInMonth; d++) {
+      var r = Math.sin(seed * 31 + d) * 10000;
+      r = r - Math.floor(r);
+      var lvl = 0;
+      if (r > 0.7) lvl = 1;
+      if (r > 0.82) lvl = 2;
+      if (r > 0.90) lvl = 3;
+      if (r > 0.95) lvl = 4;
+      var classes = 'cal-day';
+      if (lvl > 0) classes += ' has-data lvl-' + lvl;
+      if (d === 15) classes += ' today';
+      var el = document.createElement('div');
+      el.className = classes;
+      el.textContent = d;
+      el.onclick = function() { selectDay(this.textContent); };
+      grid.appendChild(el);
+    }
+  }
+
+  function createDayEl(text, cls) {
+    var el = document.createElement('div');
+    el.className = 'cal-day ' + (cls || '');
+    el.textContent = text;
+    return el;
+  }
+
+  function changeMonth(dir) {
+    calMonth += dir;
+    if (calMonth < 1) { calMonth = 12; calYear--; }
+    if (calMonth > 12) { calMonth = 1; calYear++; }
+    renderCalendar();
+  }
+
+  function selectDay(day) {
+    document.getElementById('detail-date').textContent = calMonth + '月' + day + '日';
+  }
+
+  renderCalendar();
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.getElementById('detail-modal').classList.remove('show');
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -25320,6 +25320,21 @@ function injectDreamToChar(cardId) {
 
 // --- 系统更新日志数据 ---
 const systemUpdateLogs = [
+    {
+        version: "小元机 06.24",
+        date: "2026.06.24",
+        title: "聊天提示词 2.0 升级",
+        content: [
+            "优化了聊天提示词，升级到 2.0 版本。在聊天设置 → ⭐ 高级设置 → 打开「提示词 2.0」开关即可启用。",
+            "自测感觉活人感稍微强了一点（？），但一个人实在测不出太大区别，大家可以亲自体验看看。",
+            "如果是负优化，群里有反馈的话会继续调整。"
+        ],
+        notes: [
+            "提示词 2.0 默认关闭，需要手动在聊天设置中开启。",
+            "每个角色独立设置，需分别开启。",
+            "一机一码，禁止二传二贩"
+        ]
+    },
    {
         version: "小元机 03.22",
         date: "2026.03.22",
@@ -39902,8 +39917,15 @@ document.addEventListener('click', (e) => {
 
     function openBookshelf() {
         document.getElementById('bookshelf-page').style.display = 'flex';
+        document.getElementById('reading-stats-page').style.display = 'none';
+        var myPage = document.getElementById('ra-my-page');
+        if (myPage) myPage.style.display = 'none';
         document.getElementById('reading-page').style.display = 'none';
+        var dock = document.getElementById('ra-dock');
+        if (dock) dock.style.display = 'flex';
+        raSyncDockActive('bookshelf');
         restoreBookshelf();
+        raApplyTheme();
     }
 
     window.closeBookshelf = function() {
@@ -40002,22 +40024,26 @@ document.addEventListener('click', (e) => {
 
     function createBookCard(index, book) {
         var card = document.createElement('div');
-        card.className = 'ra-book-card';
-        var progress = book.progress || 0;
-        var coverHtml;
+        card.className = 'ra-card';
+        var groupMap = { want: 'Want', reading: 'Reading', done: 'Done' };
+        var pill = groupMap[book.group] || '';
+        var tag = pill || 'Book';
+        var coverInner;
         if (book.coverImage) {
-            // 自定义封面（base64 或 URL）
-            coverHtml = '<div class="ra-book-cover" style="background:#000;"><div><img src="' + book.coverImage + '" style="width:100%;height:100%;object-fit:cover;"></div></div>';
+            coverInner = '<img src="' + book.coverImage + '" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">';
         } else {
-            // 默认封面：书名 hash 取色 + 书名
-            var color = hashColor(book.name || '');
-            coverHtml = '<div class="ra-book-cover" style="background:' + color + ';"><div class="ra-book-cover-name">' + escapeHtml(book.name) + '</div></div>';
+            coverInner = '<img src="https://i.postimg.cc/44z8H8zv/IMG-20260509-054649.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">';
         }
         card.innerHTML =
-            coverHtml +
-            '<div class="ra-book-info">' +
-                '<div class="ra-book-title">' + escapeHtml(book.name) + '</div>' +
-                '<div class="ra-book-progress-bar"><div class="ra-book-progress-fill" style="width:' + progress + '%;"></div></div>' +
+            '<div class="ra-card-top-bar">' + (pill ? '<div class="ra-card-pill">' + pill + '</div>' : '') + '</div>' +
+            '<div class="ra-card-cover">' +
+                '<div class="ra-card-tape"></div>' +
+                coverInner +
+                '<div class="ra-card-tag">' + tag + '</div>' +
+            '</div>' +
+            '<div class="ra-card-info">' +
+                '<div class="ra-card-title">' + escapeHtml(book.name) + '</div>' +
+                '<div class="ra-card-author">' + (book.author || 'A BOOK, UNREAD.') + '</div>' +
             '</div>';
         var longTimer = null;
         var cardTouchMoved = false;
@@ -40027,7 +40053,7 @@ document.addEventListener('click', (e) => {
         }, { passive: true });
         card.addEventListener('touchend', function(e) {
             clearTimeout(longTimer);
-            if (!cardTouchMoved) { openReadingPage(index); }
+            if (!cardTouchMoved) { raOpenBookPopup(index); }
         });
         card.addEventListener('touchmove', function() { cardTouchMoved = true; clearTimeout(longTimer); });
         return card;
@@ -40156,6 +40182,284 @@ document.addEventListener('click', (e) => {
         d.textContent = s;
         return d.innerHTML;
     }
+
+    // ===== UI 2.0 页面切换 & 导航 =====
+    var raCalYear = new Date().getFullYear();
+    var raCalMonth = new Date().getMonth() + 1;
+    var raCurrentPopupBook = -1;
+
+    window.raSwitchPage = function(page, el) {
+        document.getElementById('bookshelf-page').style.display = 'none';
+        document.getElementById('reading-stats-page').style.display = 'none';
+        var myPage = document.getElementById('ra-my-page');
+        if (myPage) myPage.style.display = 'none';
+        document.getElementById('reading-page').style.display = 'none';
+        if (page === 'bookshelf') {
+            document.getElementById('bookshelf-page').style.display = 'flex';
+            restoreBookshelf();
+        } else if (page === 'stats') {
+            document.getElementById('reading-stats-page').style.display = 'flex';
+            raRenderCalendar();
+        } else if (page === 'my') {
+            if (myPage) myPage.style.display = 'flex';
+            raRefreshMyPage();
+        }
+        raSyncDockActive(page);
+        raCloseBookPopup();
+    };
+
+    function raSyncDockActive(page) {
+        var items = document.querySelectorAll('.ra-dock-item');
+        for (var i = 0; i < items.length; i++) {
+            var isActive = items[i].getAttribute('data-page') === page;
+            items[i].classList.toggle('active', isActive);
+            items[i].style.background = isActive ? '#1A1A1A' : '';
+            items[i].style.color = isActive ? '#fff' : '#999';
+            var label = items[i].querySelector('.ra-dock-label');
+            if (label) label.style.display = isActive ? 'inline' : 'none';
+        }
+    }
+
+    // ===== UI 2.0 弹窗 =====
+    window.raOpenBookPopup = function(index) {
+        if (typeof index === 'object' && index !== null) { index = raBookMenuIndex; }
+        if (index === undefined || index === null || index < 0) return;
+        raCurrentPopupBook = index;
+        var books = getBooks();
+        var book = books[index];
+        if (!book) return;
+        var groupMap = { want: 'Want', reading: 'Reading', done: 'Done' };
+        var tag = groupMap[book.group] || 'Book';
+        document.getElementById('ra-popup-title').textContent = book.name || '';
+        document.getElementById('ra-popup-back-title').textContent = book.name || '';
+        document.getElementById('ra-popup-author').textContent = '状态：' + tag;
+        var cover = document.getElementById('ra-popup-cover');
+        if (book.coverImage) {
+            cover.style.backgroundImage = "url('" + book.coverImage + "')";
+            cover.style.backgroundColor = '';
+        } else {
+            cover.style.backgroundImage = 'none';
+            cover.style.backgroundColor = '#EEEEEE';
+        }
+        // 填充详情列表
+        var detailsHtml = '';
+        detailsHtml += '<div class="ra-detail-row"><span class="ra-detail-label">作者</span><span class="ra-detail-val">' + escapeHtml(book.author || '未知') + '</span></div>';
+        detailsHtml += '<div class="ra-detail-row"><span class="ra-detail-label">分组</span><span class="ra-detail-val">' + (groupMap[book.group] || '未分组') + '</span></div>';
+        detailsHtml += '<div class="ra-detail-row"><span class="ra-detail-label">阅读进度</span><span class="ra-detail-val">' + (book.progress || 0).toFixed(1) + '%</span></div>';
+        detailsHtml += '<div class="ra-detail-row"><span class="ra-detail-label">来源</span><span class="ra-detail-val">' + (book.source || '本地导入') + '</span></div>';
+        detailsHtml += '<div class="ra-detail-row" style="cursor:pointer;border-bottom:none;padding-top:8px;" onclick="raChangeCoverFromPopup()"><span class="ra-detail-label">封面</span><span class="ra-detail-val" style="color:#8E8E8E;font-weight:400;">更换封面 →</span></div>';
+        document.getElementById('ra-details-list').innerHTML = detailsHtml;
+        // 重置翻转
+        document.getElementById('ra-popup-main').classList.remove('show-details');
+        document.getElementById('ra-more-btn').textContent = '⋯';
+        document.getElementById('ra-book-popup').classList.add('show');
+    };
+
+    window.raCloseBookPopup = function(e) {
+        if (e && e.target && e.target.id !== 'ra-book-popup') return;
+        document.getElementById('ra-book-popup').classList.remove('show');
+    };
+
+    window.raToggleFlip = function() {
+        var main = document.getElementById('ra-popup-main');
+        var btn = document.getElementById('ra-more-btn');
+        main.classList.toggle('show-details');
+        btn.textContent = main.classList.contains('show-details') ? '×' : '⋯';
+    };
+
+    window.raChangeCoverFromPopup = function() {
+        var idx = raCurrentPopupBook;
+        if (idx < 0) return;
+        var books = getBooks();
+        if (!books[idx]) return;
+        var method = prompt('输入封面图片URL，或留空选择本地上传：');
+        if (method === null) return;
+        if (method.trim()) {
+            books[idx].coverImage = method.trim();
+            try { saveBooks(books); } catch(e) { alert('保存失败'); return; }
+            restoreBookshelf();
+            raOpenBookPopup(idx);
+        } else {
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/jpeg,image/png,image/webp';
+            input.onchange = function(e) {
+                var file = e.target.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    books[idx].coverImage = ev.target.result;
+                    try { saveBooks(books); } catch(e) { alert('图片太大，存储空间不足'); return; }
+                    restoreBookshelf();
+                    raOpenBookPopup(idx);
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+    };
+
+    window.raStartReading = function() {
+        raCloseBookPopup();
+        if (raCurrentPopupBook >= 0) {
+            openReadingPage(raCurrentPopupBook);
+        }
+    };
+
+    // ===== UI 2.0 统计页日历 =====
+    function raRenderCalendar() {
+        var label = document.getElementById('ra-cal-month-label');
+        if (label) label.textContent = raCalYear + '年 ' + raCalMonth + '月';
+        var grid = document.getElementById('ra-cal-days');
+        if (!grid) return;
+        grid.innerHTML = '';
+        var firstDay = new Date(raCalYear, raCalMonth - 1, 1).getDay();
+        var daysInMonth = new Date(raCalYear, raCalMonth, 0).getDate();
+        var startOffset = firstDay === 0 ? 6 : firstDay - 1;
+        for (var i = 0; i < startOffset; i++) {
+            var emptyEl = document.createElement('div');
+            emptyEl.className = 'ra-cal-day-empty';
+            emptyEl.style.cssText = 'aspect-ratio:1;';
+            grid.appendChild(emptyEl);
+        }
+        var state = getReadingState();
+        var books = getBooks();
+        // 收集每天阅读时长
+        var dayMinutes = {};
+        for (var bi = 0; bi < books.length; bi++) {
+            var key = 'book_' + bi;
+            var bookState = state[key];
+            if (bookState && bookState.dailyMinutes) {
+                for (var dateKey in bookState.dailyMinutes) {
+                    if (bookState.dailyMinutes.hasOwnProperty(dateKey)) {
+                        dayMinutes[dateKey] = (dayMinutes[dateKey] || 0) + bookState.dailyMinutes[dateKey];
+                    }
+                }
+            }
+        }
+        for (var d = 1; d <= daysInMonth; d++) {
+            var dateStr = raCalYear + '-' + (raCalMonth < 10 ? '0' : '') + raCalMonth + '-' + (d < 10 ? '0' : '') + d;
+            var mins = dayMinutes[dateStr] || 0;
+            var lvl = 0;
+            if (mins > 0) lvl = 1;
+            if (mins > 15) lvl = 2;
+            if (mins > 45) lvl = 3;
+            if (mins > 90) lvl = 4;
+            var today = new Date();
+            var isToday = (d === today.getDate() && raCalMonth === (today.getMonth() + 1) && raCalYear === today.getFullYear());
+            var el = document.createElement('div');
+            el.style.cssText = 'aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:4px;cursor:pointer;';
+            if (lvl > 0) {
+                var colors = ['', '#E8E8E8', '#D0D0D0', '#B0B0B0', '#1A1A1A'];
+                el.style.background = colors[lvl];
+                el.style.color = lvl >= 3 ? '#fff' : '#1A1A1A';
+            } else {
+                el.style.color = '#AAA';
+            }
+            if (isToday) { el.style.outline = '2px solid #1A1A1A'; el.style.outlineOffset = '-1px'; }
+            el.textContent = d;
+            el.setAttribute('data-day', d);
+            el.setAttribute('data-mins', mins);
+            el.onclick = function() { raSelectDay(this.getAttribute('data-day'), this.getAttribute('data-mins')); };
+            grid.appendChild(el);
+        }
+    }
+
+    window.raChangeMonth = function(dir) {
+        raCalMonth += dir;
+        if (raCalMonth < 1) { raCalMonth = 12; raCalYear--; }
+        if (raCalMonth > 12) { raCalMonth = 1; raCalYear++; }
+        raRenderCalendar();
+    };
+
+    window.raSelectDay = function(day, mins) {
+        document.getElementById('ra-detail-date').textContent = raCalMonth + '月' + day + '日';
+        document.getElementById('ra-detail-time').textContent = mins + '分钟';
+        // 获取当日阅读书目
+        var dateStr = raCalYear + '-' + (raCalMonth < 10 ? '0' : '') + raCalMonth + '-' + (parseInt(day) < 10 ? '0' : '') + day;
+        var books = getBooks();
+        var state = getReadingState();
+        var bookNames = [];
+        for (var bi = 0; bi < books.length; bi++) {
+            var key = 'book_' + bi;
+            var bookState = state[key];
+            if (bookState && bookState.dailyMinutes && bookState.dailyMinutes[dateStr]) {
+                bookNames.push(books[bi].name);
+            }
+        }
+        document.getElementById('ra-detail-books').textContent = bookNames.length > 0 ? '《' + bookNames.join('》《') + '》' : '无记录';
+        // 书评
+        var reviewKey = 'review_' + dateStr;
+        var reviews = JSON.parse(localStorage.getItem('ra_day_reviews') || '{}');
+        document.getElementById('ra-review-mine').textContent = (reviews[reviewKey + '_mine'] || '暂无书评');
+        document.getElementById('ra-review-char').textContent = (reviews[reviewKey + '_char'] || '暂无书评');
+    };
+
+    // ===== UI 2.0 我的页面 =====
+    function raRefreshMyPage() {
+        var state = getReadingState();
+        var totalMin = 0;
+        for (var key in state) {
+            if (state.hasOwnProperty(key) && key.indexOf('book_') === 0) {
+                totalMin += (state[key].totalMinutes || 0);
+            }
+        }
+        var hours = Math.floor(totalMin / 60);
+        document.getElementById('ra-profile-stat').textContent = '总阅读时长：' + hours + ' 小时';
+    }
+
+    window.raMenuAction = function(action) {
+        if (action === 'backup') { alert('网盘备份功能开发中...'); }
+        else if (action === 'theme') { raOpenThemeSettings(); }
+        else if (action === 'myreview') { alert('我的书评功能开发中...'); }
+        else if (action === 'charreview') { alert('char的书评功能开发中...'); }
+    };
+
+    // ===== UI 2.0 主题设置 (localStorage) =====
+    function raGetTheme() {
+        try { return JSON.parse(localStorage.getItem('ra_theme') || '{}'); } catch(e) { return {}; }
+    }
+    function raSaveTheme(t) {
+        localStorage.setItem('ra_theme', JSON.stringify(t));
+        raApplyTheme();
+    }
+    function raApplyTheme() {
+        var t = raGetTheme();
+        var bg = t.bgColor || '#F8F8F8';
+        var pages = document.querySelectorAll('#bookshelf-page, #reading-stats-page, #ra-my-page');
+        for (var i = 0; i < pages.length; i++) {
+            if (pages[i]) pages[i].style.background = bg;
+        }
+        var statsPage = document.getElementById('reading-stats-page');
+        var myPage = document.getElementById('ra-my-page');
+        if (myPage) myPage.style.background = bg;
+        var bodyBg = t.bodyColor || '#D5D5D5';
+        if (t.bodyBgImage) {
+            document.body.style.backgroundImage = "url('" + t.bodyBgImage + "')";
+            document.body.style.backgroundSize = 'cover';
+        }
+        if (t.fontFamily) {
+            var pages2 = document.querySelectorAll('#bookshelf-page, #reading-stats-page, #ra-my-page, #reading-page');
+            for (var j = 0; j < pages2.length; j++) {
+                if (pages2[j]) pages2[j].style.fontFamily = t.fontFamily;
+            }
+        }
+    }
+
+    window.raOpenThemeSettings = function() {
+        var t = raGetTheme();
+        var choice = prompt('主题设置:\n1. 修改背景色\n2. 修改字体\n\n当前背景色: ' + (t.bgColor || '#F8F8F8') + '\n当前字体: ' + (t.fontFamily || '系统默认') + '\n\n输入数字选择:');
+        if (!choice) return;
+        if (choice === '1') {
+            var color = prompt('输入背景色 (如 #F8F8F8 或 #FFFFFF):', t.bgColor || '#F8F8F8');
+            if (color) { t.bgColor = color; raSaveTheme(t); }
+        } else if (choice === '2') {
+            var font = prompt('输入字体名称 (如 serif, sans-serif, 或留空恢复默认):', t.fontFamily || '');
+            if (font !== null) { t.fontFamily = font || ''; raSaveTheme(t); }
+        }
+    };
+
+    // 主题在 openBookshelf() 中应用
 
     // ===== 阅读页逻辑 =====
     function openReadingPage(index) {
