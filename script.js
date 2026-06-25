@@ -25306,12 +25306,12 @@ function applyDreamBackground() {
         }
     }
 
-    // 5. 底栏：有背景图时半透明，否则跟随背景色
+    // 5. 底栏：有背景图时透明（跟随背景层），否则跟随背景色
     var footer = document.querySelector('.dream-chat-footer');
     if (footer) {
         if (bgImage) {
-            footer.style.background = 'rgba(0,0,0,0.35)';
-            footer.style.backdropFilter = 'blur(12px)';
+            footer.style.background = 'transparent';
+            footer.style.backdropFilter = 'none';
             footer.style.borderTopColor = 'rgba(255,255,255,0.08)';
         } else {
             footer.style.background = bgColor;
