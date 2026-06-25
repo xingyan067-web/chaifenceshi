@@ -25314,17 +25314,38 @@ window.uploadDreamBgImage = function() {
     input.onchange = function(e) {
         var file = e.target.files[0];
         if (!file) { document.body.removeChild(input); return; }
-        if (file.size > 3 * 1024 * 1024) { alert('图片不能超过3MB'); document.body.removeChild(input); return; }
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-            dreamState.bgImage = ev.target.result;
+        if (file.size > 10 * 1024 * 1024) { alert('图片不能超过10MB'); document.body.removeChild(input); return; }
+        // Canvas 压缩后再存 base64
+        var img = new Image();
+        var objUrl = URL.createObjectURL(file);
+        img.onload = function() {
+            var maxW = 1200, maxH = 1200;
+            var w = img.width, h = img.height;
+            if (w > maxW || h > maxH) {
+                var ratio = Math.min(maxW / w, maxH / h);
+                w = Math.round(w * ratio);
+                h = Math.round(h * ratio);
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+            URL.revokeObjectURL(objUrl);
+            dreamState.bgImage = dataUrl;
             var urlInput = document.getElementById('dream-bg-url-input');
             if (urlInput) urlInput.value = '[本地图片]';
             dreamSaveData();
             applyDreamBackground();
             document.body.removeChild(input);
         };
-        reader.readAsDataURL(file);
+        img.onerror = function() {
+            URL.revokeObjectURL(objUrl);
+            alert('图片加载失败，请重试');
+            document.body.removeChild(input);
+        };
+        img.src = objUrl;
     };
     input.click();
 };
