@@ -25265,18 +25265,23 @@ function applyDreamFontSettings() {
 // 梦境自定义背景
 function applyDreamBackground() {
     var pages = document.querySelectorAll('#dream-main-page, #dream-chat-page');
+    var headers = document.querySelectorAll('#dream-main-page .dream-header, #dream-chat-page .dream-header');
     var bgColor = dreamState.bgColor || '#0A0A0A';
     var bgImage = dreamState.bgImage || '';
     for (var i = 0; i < pages.length; i++) {
         if (pages[i]) {
-            pages[i].style.background = bgColor;
             if (bgImage) {
-                pages[i].style.backgroundImage = 'url(' + bgImage + ')';
-                pages[i].style.backgroundSize = 'cover';
-                pages[i].style.backgroundPosition = 'center';
+                pages[i].style.background = bgColor + ' url(' + bgImage + ') center/cover no-repeat';
             } else {
+                pages[i].style.background = bgColor;
                 pages[i].style.backgroundImage = '';
             }
+        }
+    }
+    // 自定义背景时头部半透明
+    for (var j = 0; j < headers.length; j++) {
+        if (headers[j]) {
+            headers[j].style.background = bgImage ? 'transparent' : '';
         }
     }
 }
@@ -25303,7 +25308,7 @@ window.uploadDreamBgImage = function() {
     input.onchange = function(e) {
         var file = e.target.files[0];
         if (!file) { document.body.removeChild(input); return; }
-        if (file.size > 500 * 1024) { alert('图片不能超过500KB'); document.body.removeChild(input); return; }
+        if (file.size > 3 * 1024 * 1024) { alert('图片不能超过3MB'); document.body.removeChild(input); return; }
         var reader = new FileReader();
         reader.onload = function(ev) {
             dreamState.bgImage = ev.target.result;
@@ -25539,7 +25544,10 @@ function showSystemUpdatePopup() {
     contentList.innerHTML = latestLog.content.map(item => `<li>${item}</li>`).join('');
     
     const notesList = document.getElementById('sys-update-notes-list');
-    notesList.innerHTML = latestLog.notes.map(item => `<li>${item}</li>`).join('');
+    notesList.innerHTML = latestLog.notes.map(function(item, idx, arr) {
+        var style = (idx === arr.length - 1 && /^——/.test(item)) ? ' style="text-align:right;list-style:none;"' : '';
+        return '<li' + style + '>' + item + '</li>';
+    }).join('');
     
     popup.classList.remove('hidden');
     requestAnimationFrame(() => {
