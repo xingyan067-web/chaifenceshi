@@ -40479,9 +40479,20 @@ document.addEventListener('click', (e) => {
         var t = raGetActivePreset();
         var bg = (t && t.bgColor) ? t.bgColor : '#F8F8F8';
         var font = (t && t.fontFamily) ? t.fontFamily : '';
+        var bgImage = (t && t.bgImage) ? t.bgImage : '';
         var pages = document.querySelectorAll('#bookshelf-page, #reading-stats-page, #ra-my-page, #ra-theme-page');
         for (var i = 0; i < pages.length; i++) {
-            if (pages[i]) { pages[i].style.background = bg; if (font) pages[i].style.fontFamily = font; }
+            if (pages[i]) {
+                pages[i].style.background = bg;
+                if (bgImage) {
+                    pages[i].style.backgroundImage = 'url(' + bgImage + ')';
+                    pages[i].style.backgroundSize = 'cover';
+                    pages[i].style.backgroundPosition = 'center';
+                } else {
+                    pages[i].style.backgroundImage = '';
+                }
+                if (font) pages[i].style.fontFamily = font;
+            }
         }
     }
 
@@ -40507,11 +40518,13 @@ document.addEventListener('click', (e) => {
             card.onclick = function(idx) {
                 return function() { raThemeSwitchPreset(idx); };
             }(i);
+            var thumbStyle = p.bgImage ? 'background-image:url(' + p.bgImage + ');background-size:cover;background-position:center;' : 'background:' + escapeHtml(p.bgColor || '#F8F8F8') + ';';
+            var infoLine = escapeHtml(p.bgColor || '#F8F8F8') + (p.bgImage ? ' + 背景图' : '') + (p.fontFamily ? ' / ' + p.fontFamily : '');
             card.innerHTML =
-                '<div style="width:36px;height:36px;border-radius:50%;background:' + escapeHtml(p.bgColor || '#F8F8F8') + ';border:1px solid #E5E5E5;flex-shrink:0;"></div>' +
+                '<div style="width:36px;height:36px;border-radius:50%;' + thumbStyle + 'border:1px solid #E5E5E5;flex-shrink:0;"></div>' +
                 '<div style="flex:1;min-width:0;">' +
                     '<div style="font-size:14px;font-weight:600;color:#1A1A1A;">' + escapeHtml(p.name) + (isActive ? ' <span style="font-size:10px;color:#8E8E8E;">[当前]</span>' : '') + '</div>' +
-                    '<div style="font-size:11px;color:#999;margin-top:2px;">' + escapeHtml(p.bgColor || '#F8F8F8') + (p.fontFamily ? ' / ' + p.fontFamily : '') + '</div>' +
+                    '<div style="font-size:11px;color:#999;margin-top:2px;">' + infoLine + '</div>' +
                 '</div>' +
                 '<button style="width:28px;height:28px;border-radius:50%;border:1px solid #E5E5E5;background:#fff;color:#999;font-size:14px;cursor:pointer;flex-shrink:0;line-height:28px;text-align:center;padding:0;" onclick="event.stopPropagation();raThemeDeletePreset(\'' + p.id + '\');">×</button>';
             list.appendChild(card);
@@ -40519,18 +40532,56 @@ document.addEventListener('click', (e) => {
     }
 
     window.raThemeNewPreset = function() {
-        var name = prompt('预设名称:');
-        if (!name || !name.trim()) return;
-        var bgColor = prompt('背景色 (如 #F8F8F8):', '#F8F8F8');
-        if (!bgColor || !bgColor.trim()) return;
-        var fontFamily = prompt('字体 (如 serif, 留空=默认):', '');
+        // 打开编辑弹窗
+        document.getElementById('ra-theme-inp-name').value = '';
+        document.getElementById('ra-theme-inp-bg').value = '#F8F8F8';
+        document.getElementById('ra-theme-inp-bg-picker').value = '#F8F8F8';
+        document.getElementById('ra-theme-inp-img').value = '';
+        document.getElementById('ra-theme-inp-file').value = '';
+        document.getElementById('ra-theme-inp-font').value = '';
+        raThemeTempBgImage = '';
+        var editor = document.getElementById('ra-theme-editor');
+        if (editor) editor.style.display = 'flex';
+    };
+
+    var raThemeTempBgImage = '';
+
+    window.raThemeFileSelected = function(input) {
+        var file = input.files[0];
+        if (!file) return;
+        if (file.size > 500 * 1024) { alert('图片不能超过500KB'); return; }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            raThemeTempBgImage = e.target.result;
+            document.getElementById('ra-theme-inp-img').value = '[本地图片]';
+        };
+        reader.readAsDataURL(file);
+    };
+
+    window.raCloseThemeEditor = function(e) {
+        if (e && e.target !== document.getElementById('ra-theme-editor')) return;
+        var editor = document.getElementById('ra-theme-editor');
+        if (editor) editor.style.display = 'none';
+        raThemeTempBgImage = '';
+    };
+
+    window.raSaveThemePreset = function() {
+        var name = document.getElementById('ra-theme-inp-name').value.trim();
+        if (!name) { alert('请输入预设名称'); return; }
+        var bgColor = document.getElementById('ra-theme-inp-bg').value.trim() || '#F8F8F8';
+        var imgUrl = document.getElementById('ra-theme-inp-img').value.trim();
+        var bgImage = raThemeTempBgImage || (imgUrl && imgUrl !== '[本地图片]' ? imgUrl : '');
+        var fontFamily = document.getElementById('ra-theme-inp-font').value;
         var presets = raGetAllPresets();
-        var preset = { id: 'p_' + Date.now(), name: name.trim(), bgColor: bgColor.trim(), fontFamily: fontFamily ? fontFamily.trim() : '' };
+        var preset = { id: 'p_' + Date.now(), name: name, bgColor: bgColor, bgImage: bgImage, fontFamily: fontFamily };
         presets.push(preset);
         raSaveAllPresets(presets);
         raSetActivePresetId(preset.id);
         raApplyTheme();
         raRenderThemePresets();
+        var editor = document.getElementById('ra-theme-editor');
+        if (editor) editor.style.display = 'none';
+        raThemeTempBgImage = '';
     };
 
     window.raThemeDeletePreset = function(id) {
@@ -40567,6 +40618,8 @@ document.addEventListener('click', (e) => {
         if (!book || !book.content) return;
 
         document.getElementById('bookshelf-page').style.display = 'none';
+        var dock = document.getElementById('ra-dock');
+        if (dock) dock.style.display = 'none';
         document.getElementById('reading-page').style.display = 'flex';
         document.getElementById('reading-bookname').textContent = book.name;
 
@@ -40634,6 +40687,8 @@ document.addEventListener('click', (e) => {
         hideReadingMenu();
         document.getElementById('reading-page').style.display = 'none';
         document.getElementById('bookshelf-page').style.display = 'flex';
+        var dock = document.getElementById('ra-dock');
+        if (dock) dock.style.display = 'flex';
         restoreBookshelf();
     };
 
