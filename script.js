@@ -17482,25 +17482,22 @@ const DEFAULT_SUMMARY_PROMPT = `Write in the form of {{char}}'s diary. The timel
 
 function wcOpenCustomPromptModal() {
     const char = wcState.characters.find(c => c.id === wcState.activeChatId);
-    const current = (char?.chatConfig?.customSummaryPrompt) ? char.chatConfig.customSummaryPrompt : DEFAULT_SUMMARY_PROMPT;
-    document.getElementById('wc-mem-custom-prompt-text').value = current;
+    document.getElementById('wc-mem-custom-prompt-text').value = char?.chatConfig?.customSummaryPrompt || '';
     wcOpenModal('wc-modal-memory-custom-prompt');
 }
 
 function wcSaveCustomPrompt() {
     const text = document.getElementById('wc-mem-custom-prompt-text').value.trim();
-    if (!text) return alert("提示词不能为空");
     const char = wcState.characters.find(c => c.id === wcState.activeChatId);
     if (!char) return;
     if (!char.chatConfig) char.chatConfig = {};
-    char.chatConfig.customSummaryPrompt = text;
+    char.chatConfig.customSummaryPrompt = text || '';
     wcSaveData();
     wcCloseModal('wc-modal-memory-custom-prompt');
-    alert("自定义总结提示词已保存！");
 }
 
 function wcResetCustomPrompt() {
-    document.getElementById('wc-mem-custom-prompt-text').value = DEFAULT_SUMMARY_PROMPT;
+    document.getElementById('wc-mem-custom-prompt-text').value = '';
 }
 
 // --- 新增：主屏幕系统通知 ---

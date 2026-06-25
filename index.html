@@ -6409,11 +6409,9 @@
                 <div id="wc-modal-memory-actions" class="wc-modal hidden" style="z-index: 2200; align-items: flex-end;">
                     <div class="wc-modal-content" style="height: auto; border-radius: 12px 12px 0 0; width: 100%; max-width: 100%; background-color: transparent;">
                         <div class="wc-ios-list-group" style="margin: 0 10px; border-radius: 12px; overflow: hidden;">
-                            <div class="wc-list-item center-content" onclick="wcOpenMemorySummaryModal(); wcCloseModal('wc-modal-memory-actions');" style="background: white; height: 56px;">
-                                <span style="font-size: 18px; color: #007AFF;">手动总结聊天</span>
-                            </div>
-                            <div class="wc-list-item center-content" onclick="wcOpenCustomPromptModal(); wcCloseModal('wc-modal-memory-actions');" style="background: white; height: 56px;">
-                                <span style="font-size: 18px; color: #007AFF;">自定义总结提示词</span>
+                            <div class="wc-list-item center-content" style="background: white; height: 56px; display: flex; align-items: center; justify-content: center; position: relative;">
+                                <span style="font-size: 18px; color: #007AFF;" onclick="wcOpenMemorySummaryModal(); wcCloseModal('wc-modal-memory-actions');">手动总结聊天</span>
+                                <span style="position: absolute; right: 14px; font-size: 13px; color: #007AFF; padding: 4px 10px; border: 1px solid #007AFF; border-radius: 14px; cursor: pointer;" onclick="event.stopPropagation(); wcOpenCustomPromptModal(); wcCloseModal('wc-modal-memory-actions');">提示词</span>
                             </div>
                             <div class="wc-list-item center-content" onclick="wcOpenModal('wc-modal-memory-add'); wcCloseModal('wc-modal-memory-actions');" style="background: white; height: 56px;">
                                 <span style="font-size: 18px; color: #007AFF;">手动添加记忆</span>
