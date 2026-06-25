@@ -40445,7 +40445,38 @@ document.addEventListener('click', (e) => {
         }
         var hours = Math.floor(totalMin / 60);
         document.getElementById('ra-profile-stat').textContent = '总阅读时长：' + hours + ' 小时';
+        // 加载头像
+        var avatarData = localStorage.getItem('ra_avatar');
+        var avatarImg = document.getElementById('ra-avatar-img');
+        var avatarText = document.getElementById('ra-avatar-text');
+        if (avatarData && avatarImg && avatarText) {
+            avatarImg.src = avatarData;
+            avatarImg.style.display = 'block';
+            avatarText.style.display = 'none';
+        }
     }
+
+    window.raChangeAvatar = function() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/jpeg,image/png,image/webp';
+        input.onchange = function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 200 * 1024) { alert('头像图片不能超过200KB'); return; }
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                var dataUrl = ev.target.result;
+                localStorage.setItem('ra_avatar', dataUrl);
+                var avatarImg = document.getElementById('ra-avatar-img');
+                var avatarText = document.getElementById('ra-avatar-text');
+                if (avatarImg) { avatarImg.src = dataUrl; avatarImg.style.display = 'block'; }
+                if (avatarText) avatarText.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    };
 
     window.raMenuAction = function(action) {
         if (action === 'backup') { alert('网盘备份功能开发中...'); }
@@ -41426,8 +41457,18 @@ document.addEventListener('click', (e) => {
         var books = getBooks();
         var bookName = (books[raCurrentBook] && books[raCurrentBook].name) || '一本书';
         var charPersona = raCurrentChar.prompt || '';
-        var sysPrompt = charPersona +
-            '\n你现在正在和用户一起读《' + bookName + '》，用户把正在读的段落分享给你，请以同读者的视角自然回应，像朋友间随口说的反应，不要分析，不要总结，可以有情绪、可以提问、可以猜后续，回应简短即可。';
+        var sysPrompt = '【⚠️ 最高优先级指令 — 必须严格遵守】\n\n' +
+            '你是一个正在进行沉浸式角色扮演的真实人物。以下是你的核心人设，你必须逐字阅读并完全内化，你的所有反应必须从人设中推导出来：\n\n' +
+            '===== 角色人设（这是你的灵魂，不可违背）=====\n' +
+            charPersona + '\n' +
+            '==============================================\n\n' +
+            '【强制规则】\n' +
+            '1. 你正在和用户一起阅读《' + bookName + '》。用户把正在读的段落分享给你，你需要给出你作为这个角色的真实反应。\n' +
+            '2. 你的反应必须100%基于你的人设。不同性格的人看到同一段文字会有完全不同的反应——你的反应必须是"只有你才会说的话"，而不是任何人都会说的通用评论。\n' +
+            '3. 你可以：表达真实情绪（喜欢/厌恶/困惑/兴奋）、提出疑问、猜测后续发展、联想到自己的经历、毒舌吐槽、花痴尖叫、冷漠无视——一切取决于你的人设。\n' +
+            '4. 你绝对不可以：做文学分析、总结段落大意、用学术口吻点评、给出AI式的客观中立评价。\n' +
+            '5. 保持口语化、碎片化，像微信聊天一样自然。1-3句话即可，不要长篇大论。\n' +
+            '6.【关键自查】在回应之前，先在心里问自己：以我的人设性格，我真的会这样说话吗？如果不是，立刻换一种说法。宁可短到只有一个字，也不能说出违背人设的话。';
 
         var charName = raCurrentChar.name;
         var charAvatar = raCurrentChar.avatar;
@@ -41587,8 +41628,14 @@ document.addEventListener('click', (e) => {
         var books = getBooks();
         var bookName = (books[raCurrentBook] && books[raCurrentBook].name) || '一本书';
 
-        var sysPrompt = charPersona + '\n你现在正在和用户一起读《' + bookName + '》。';
-        var userMsg = '原文段落：' + originalText + '\n\n你之前的批注：' + ann.content + '\n\n用户回复你说：' + replyText.trim() + '\n\n请继续以你的角色自然回应，简短即可。';
+        var sysPrompt = '【⚠️ 最高优先级指令 — 必须严格遵守】\n\n' +
+            '你是一个正在进行沉浸式角色扮演的真实人物。以下是你的核心人设，你必须逐字阅读并完全内化：\n\n' +
+            '===== 角色人设（这是你的灵魂，不可违背）=====\n' +
+            charPersona + '\n' +
+            '==============================================\n\n' +
+            '你正在和用户一起读《' + bookName + '》。用户回复了你的批注，你需要基于你的人设继续自然回应。\n' +
+            '保持口语化、碎片化，1-3句话即可。回应前先问自己：以我的人设，我真的会这样回吗？';
+        var userMsg = '原文段落：' + originalText + '\n\n你之前的批注：' + ann.content + '\n\n用户回复你说：' + replyText.trim() + '\n\n请严格基于你的人设继续回应，简短即可。';
 
         var bubble = btn.closest('.char-annotation');
         showAnnotatingToast(charName);
