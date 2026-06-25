@@ -25319,6 +25319,20 @@ function applyDreamBackground() {
             footer.style.borderTopColor = 'var(--dream-border-color, #222)';
         }
     }
+
+    // 6. 模型选择标签：有背景图时半透明
+    var modelTag = document.querySelector('.dream-model-tag');
+    if (modelTag) {
+        if (bgImage) {
+            modelTag.style.backgroundColor = 'rgba(255,255,255,0.12)';
+            modelTag.style.color = '#FFF';
+            modelTag.style.borderColor = 'rgba(255,255,255,0.2)';
+        } else {
+            modelTag.style.backgroundColor = '#222';
+            modelTag.style.color = '#CCC';
+            modelTag.style.borderColor = '#333';
+        }
+    }
 }
 
 window.changeDreamBgColor = function(val) {
