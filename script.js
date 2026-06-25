@@ -23449,6 +23449,8 @@ const dreamState = {
     fontUrl: '',  // 新增：梦境字体URL
     fontColor: '#111111', // 新增：梦境字体颜色
     offlineContextLimit: 20, // 新增：线下上下文条数
+    bgColor: '#0A0A0A',   // 梦境背景色
+    bgImage: '',           // 梦境背景图 (URL 或 base64)
     // 新增：扩展组件数据
     ext: {
         currentTab: 'css', // 当前停留的tab
@@ -23486,9 +23488,12 @@ async function dreamLoadData() {
             if (data.fontUrl !== undefined) dreamState.fontUrl = data.fontUrl;
             if (data.fontColor !== undefined) dreamState.fontColor = data.fontColor;
             if (data.offlineContextLimit !== undefined) dreamState.offlineContextLimit = data.offlineContextLimit;
+            if (data.bgColor !== undefined) dreamState.bgColor = data.bgColor;
+            if (data.bgImage !== undefined) dreamState.bgImage = data.bgImage;
         }
         applyDreamCss(); // 加载时自动应用全局 CSS
         applyDreamFontSettings(); // 加载时应用字体设置
+        applyDreamBackground(); // 加载时应用背景设置
     } catch (e) {
         console.error("加载梦境数据失败", e);
     }
@@ -23504,7 +23509,9 @@ async function dreamSaveData() {
         fontSize: dreamState.fontSize,
         fontUrl: dreamState.fontUrl,
         fontColor: dreamState.fontColor,
-        offlineContextLimit: dreamState.offlineContextLimit
+        offlineContextLimit: dreamState.offlineContextLimit,
+        bgColor: dreamState.bgColor,
+        bgImage: dreamState.bgImage
     });
 }
 
@@ -23531,6 +23538,7 @@ async function openDreamMainPage() {
     // 4. 延迟 150ms 显示，避开键盘收起和面板关闭的动画期
     setTimeout(() => {
         document.getElementById('dream-main-page').classList.add('active');
+        applyDreamBackground();
         dreamRenderCards();
     }, 150);
 }
@@ -23788,6 +23796,9 @@ function dreamRenderSettings() {
     document.getElementById('dream-font-size-val').innerText = (dreamState.fontSize || 14) + 'px';
     document.getElementById('dream-font-color-input').value = dreamState.fontColor || '#111111';
     document.getElementById('dream-font-url-input').value = dreamState.fontUrl || '';
+    // 背景设置回填
+    document.getElementById('dream-bg-color-input').value = dreamState.bgColor || '#0A0A0A';
+    document.getElementById('dream-bg-url-input').value = dreamState.bgImage || '';
 
     // 1. 渲染世界书列表
     const wbList = document.getElementById('dream-wb-list');
@@ -24253,7 +24264,8 @@ async function enterDreamChat(mode = 'dream') {
     dreamState.currentMode = mode; // 记录模式
     dreamState.currentChat = []; 
     document.getElementById('dream-chat-page').classList.add('active');
-    
+    applyDreamBackground();
+
     // 更新顶栏头像和名字
     const char = wcState.characters.find(c => c.id === wcState.activeChatId);
     if (char) {
@@ -25246,6 +25258,58 @@ function applyDreamFontSettings() {
     }
 }
 
+// 梦境自定义背景
+function applyDreamBackground() {
+    var pages = document.querySelectorAll('#dream-main-page, #dream-chat-page, #dream-settings-modal .dream-modal-box');
+    var bgColor = dreamState.bgColor || '#0A0A0A';
+    var bgImage = dreamState.bgImage || '';
+    for (var i = 0; i < pages.length; i++) {
+        if (pages[i]) {
+            pages[i].style.background = bgColor;
+            if (bgImage) {
+                pages[i].style.backgroundImage = 'url(' + bgImage + ')';
+                pages[i].style.backgroundSize = 'cover';
+                pages[i].style.backgroundPosition = 'center';
+            } else {
+                pages[i].style.backgroundImage = '';
+            }
+        }
+    }
+}
+
+window.changeDreamBgColor = function(val) {
+    dreamState.bgColor = val;
+    dreamSaveData();
+    applyDreamBackground();
+};
+
+window.changeDreamBgImage = function() {
+    var url = document.getElementById('dream-bg-url-input').value.trim();
+    dreamState.bgImage = url;
+    dreamSaveData();
+    applyDreamBackground();
+};
+
+window.uploadDreamBgImage = function() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 500 * 1024) { alert('图片不能超过500KB'); return; }
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            dreamState.bgImage = ev.target.result;
+            document.getElementById('dream-bg-url-input').value = '[本地图片]';
+            dreamSaveData();
+            applyDreamBackground();
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+};
+
 // --- 新增：先不总结，储存记录退出 ---
 function saveAndExitDreamChat() {
     if (dreamState.currentChat.length > 1) {
@@ -25320,6 +25384,20 @@ function injectDreamToChar(cardId) {
 
 // --- 系统更新日志数据 ---
 const systemUpdateLogs = [
+    {
+        version: "小元机 06.25",
+        date: "2026.06.25",
+        title: "阅读 UI 优化 & 批注人设修复",
+        content: [
+            "优化了阅读的 UI，现在更换封面需要点进去，在右下角的「…」菜单里操作；同时新增了保存自定义封面的功能。",
+            "优化了阅读批注不读人设的问题，自测下来应该会读人设了，后续还会继续优化。",
+            "梦境新增了自定义背景的小功能。"
+        ],
+        notes: [
+            "更换封面：点击书籍 → 右下角「…」→ 翻转后点击「更换封面 →」",
+            "—— 知知"
+        ]
+    },
     {
         version: "小元机 06.24",
         date: "2026.06.24",

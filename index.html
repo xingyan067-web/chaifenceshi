@@ -2130,8 +2130,8 @@
                 <!-- ======== 阅读统计页 (UI 2.0) ======== -->
                 <div id="reading-stats-page" style="display:none; width:100%; height:100%; flex-direction:column; background:#F8F8F8; overflow-y:auto;">
                     <div class="ra-page-title-area" style="padding: 60px 24px 10px; flex-shrink: 0;">
-                        <div class="ra-page-title-en" style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8E8E8E; margin-bottom: 2px;">Reading Stats</div>
                         <div class="ra-page-title-cn" style="font-size: 28px; font-weight: 800; color: #1A1A1A;">统计</div>
+                        <div class="ra-page-title-en" style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8E8E8E; margin-top: 2px;">Reading Stats</div>
                     </div>
                     <div class="ra-calendar-widget" style="padding: 0 20px;">
                         <div class="ra-cal-month-nav" style="display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 16px;">
@@ -2162,8 +2162,8 @@
                 <!-- ======== 我的页面 (UI 2.0) ======== -->
                 <div id="ra-my-page" style="display:none; width:100%; height:100%; flex-direction:column; background:#F8F8F8; overflow-y:auto;">
                     <div class="ra-page-title-area" style="padding: 60px 24px 10px; flex-shrink: 0;">
-                        <div class="ra-page-title-en" style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8E8E8E; margin-bottom: 2px;">My Library</div>
                         <div class="ra-page-title-cn" style="font-size: 28px; font-weight: 800; color: #1A1A1A;">我的</div>
+                        <div class="ra-page-title-en" style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8E8E8E; margin-top: 2px;">My Library</div>
                     </div>
                     <div class="ra-profile-card" style="margin: 0 20px; padding: 24px; background: #FFFFFF; border-radius: 16px; border: 1px solid #E5E5E5; text-align: center;">
                         <div class="ra-profile-avatar" id="ra-profile-avatar" onclick="raChangeAvatar()" style="width: 64px; height: 64px; border-radius: 50%; background: #1A1A1A; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; margin: 0 auto 12px; cursor: pointer; overflow: hidden; position: relative;">
@@ -8614,6 +8614,21 @@
                     <input type="text" id="dream-font-url-input" class="dream-font-input" placeholder="https://.../font.woff2">
                     <button class="dream-btn-primary" style="width: 80px; height: 38px; border-radius: 8px; margin: 0;" onclick="applyDreamFontUrl()">应用</button>
                 </div>
+            </div>
+
+            <!-- 新增：自定义背景 -->
+            <div class="dream-section-title" style="margin-top: 20px;">自定义背景</div>
+            <div class="dream-font-settings-box">
+                <div class="dream-font-settings-row" style="align-items: center;">
+                    <span>背景颜色</span>
+                    <input type="color" id="dream-bg-color-input" onchange="changeDreamBgColor(this.value)" style="width: 40px; height: 30px; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
+                </div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 8px;">背景图片 URL</div>
+                <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                    <input type="text" id="dream-bg-url-input" class="dream-font-input" placeholder="https://... 或上传本地图片">
+                    <button class="dream-btn-primary" style="width: 80px; height: 38px; border-radius: 8px; margin: 0;" onclick="changeDreamBgImage()">应用</button>
+                </div>
+                <button onclick="uploadDreamBgImage()" style="width:100%;padding:10px;background:#fff;border:1px dashed #ccc;border-radius:8px;font-size:12px;color:#888;cursor:pointer;">上传本地背景图</button>
             </div>
 
             <div class="dream-section-title">关联世界书</div>
