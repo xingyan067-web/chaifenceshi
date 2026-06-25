@@ -8616,21 +8616,6 @@
                 </div>
             </div>
 
-            <!-- 新增：自定义背景 -->
-            <div class="dream-section-title" style="margin-top: 20px;">自定义背景</div>
-            <div class="dream-font-settings-box">
-                <div class="dream-font-settings-row" style="align-items: center;">
-                    <span>背景颜色</span>
-                    <input type="color" id="dream-bg-color-input" onchange="changeDreamBgColor(this.value)" style="width: 40px; height: 30px; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
-                </div>
-                <div style="font-size: 13px; color: #555; margin-bottom: 8px;">背景图片 URL</div>
-                <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                    <input type="text" id="dream-bg-url-input" class="dream-font-input" placeholder="https://... 或上传本地图片">
-                    <button class="dream-btn-primary" style="width: 80px; height: 38px; border-radius: 8px; margin: 0;" onclick="changeDreamBgImage()">应用</button>
-                </div>
-                <button onclick="uploadDreamBgImage()" style="width:100%;padding:10px;background:#fff;border:1px dashed #ccc;border-radius:8px;font-size:12px;color:#888;cursor:pointer;">上传本地背景图</button>
-            </div>
-
             <div class="dream-section-title">关联世界书</div>
             <div class="ins-wb-select-btn" onclick="openGlobalWbModal('dream-wb-list', 'dream-wb-count', '', () => { dreamState.selectedWbIds = Array.from(document.querySelectorAll('#dream-wb-list input:checked')).map(cb=>cb.value); dreamSaveData(); })">
                 <span class="title">选择要关联的世界书</span>
@@ -9747,9 +9732,17 @@
 <!-- 亮度调节弹窗 -->
 <div class="dream-modal-overlay" id="brightness-modal" style="align-items: center;" onclick="if(event.target===this) closeBrightnessModal()">
     <div class="dream-preset-paper" style="width: 85%; max-width: 320px; padding: 24px; border-radius: 16px; border: 1px solid #EAEAEA; box-shadow: 0 20px 40px rgba(0,0,0,0.1); background: #FFF;">
-        <div style="font-size: 16px; font-weight: bold; text-align: center; color: #111; margin-bottom: 20px;">调节背景亮度</div>
+        <div style="font-size: 16px; font-weight: bold; text-align: center; color: #111; margin-bottom: 20px;">背景与亮度</div>
         <input type="range" id="brightness-slider" min="0" max="100" value="100" oninput="changeBrightness(this.value)" style="width: 100%; accent-color: #111;">
         <div style="text-align: center; font-size: 13px; color: #888; margin-top: 15px; font-weight: bold;" id="brightness-val-display">100%</div>
+        <div style="border-top:1px solid #EEE; padding-top:14px; margin-top:14px;">
+            <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:8px;">自定义背景</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:13px;color:#555;">背景颜色</span><input type="color" id="dream-bg-color-input" onchange="changeDreamBgColor(this.value)" style="width:36px;height:30px;border:none;border-radius:4px;cursor:pointer;background:transparent;"></div>
+            <div style="font-size:12px;color:#888;margin-bottom:4px;">背景图片 URL</div>
+            <input type="text" id="dream-bg-url-input" class="dream-font-input" placeholder="https://... 或点下方上传" style="width:100%;margin-bottom:8px;box-sizing:border-box;">
+            <button onclick="uploadDreamBgImage()" style="width:100%;padding:10px;background:#fff;border:1px dashed #ccc;border-radius:8px;font-size:12px;color:#888;cursor:pointer;margin-bottom:8px;">上传本地图片</button>
+            <button class="dream-btn-primary" style="width:100%;border-radius:8px;padding:10px;font-size:13px;margin:0;" onclick="changeDreamBgImage()">应用背景</button>
+        </div>
         <button class="dream-btn-primary" style="margin-top: 20px; width: 100%; border-radius: 12px; padding: 12px; font-size: 14px;" onclick="saveBrightness()">保存</button>
     </div>
 </div>

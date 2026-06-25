@@ -688,6 +688,8 @@ window.onload = async function() {
                     loadingScreen.style.opacity = '0';
                     setTimeout(() => loadingScreen.style.display = 'none', 400);
                 }
+                // 检查系统更新公告
+                setTimeout(() => checkSystemUpdate(), 800);
             });
             // 👆 新增结束 👆
 
@@ -23796,9 +23798,6 @@ function dreamRenderSettings() {
     document.getElementById('dream-font-size-val').innerText = (dreamState.fontSize || 14) + 'px';
     document.getElementById('dream-font-color-input').value = dreamState.fontColor || '#111111';
     document.getElementById('dream-font-url-input').value = dreamState.fontUrl || '';
-    // 背景设置回填
-    document.getElementById('dream-bg-color-input').value = dreamState.bgColor || '#0A0A0A';
-    document.getElementById('dream-bg-url-input').value = dreamState.bgImage || '';
 
     // 1. 渲染世界书列表
     const wbList = document.getElementById('dream-wb-list');
@@ -24520,6 +24519,11 @@ async function selectDreamModel(modelName) {
 function openBrightnessModal() {
     const modal = document.getElementById('brightness-modal');
     if (modal) {
+        // 回填背景值
+        var bgColorInput = document.getElementById('dream-bg-color-input');
+        var bgUrlInput = document.getElementById('dream-bg-url-input');
+        if (bgColorInput) bgColorInput.value = dreamState.bgColor || '#0A0A0A';
+        if (bgUrlInput) bgUrlInput.value = dreamState.bgImage || '';
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('active'), 10);
     }
@@ -25260,7 +25264,7 @@ function applyDreamFontSettings() {
 
 // 梦境自定义背景
 function applyDreamBackground() {
-    var pages = document.querySelectorAll('#dream-main-page, #dream-chat-page, #dream-settings-modal .dream-modal-box');
+    var pages = document.querySelectorAll('#dream-main-page, #dream-chat-page');
     var bgColor = dreamState.bgColor || '#0A0A0A';
     var bgImage = dreamState.bgImage || '';
     for (var i = 0; i < pages.length; i++) {
@@ -25294,16 +25298,20 @@ window.uploadDreamBgImage = function() {
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/jpeg,image/png,image/webp';
+    input.style.display = 'none';
+    document.body.appendChild(input);
     input.onchange = function(e) {
         var file = e.target.files[0];
-        if (!file) return;
-        if (file.size > 500 * 1024) { alert('图片不能超过500KB'); return; }
+        if (!file) { document.body.removeChild(input); return; }
+        if (file.size > 500 * 1024) { alert('图片不能超过500KB'); document.body.removeChild(input); return; }
         var reader = new FileReader();
         reader.onload = function(ev) {
             dreamState.bgImage = ev.target.result;
-            document.getElementById('dream-bg-url-input').value = '[本地图片]';
+            var urlInput = document.getElementById('dream-bg-url-input');
+            if (urlInput) urlInput.value = '[本地图片]';
             dreamSaveData();
             applyDreamBackground();
+            document.body.removeChild(input);
         };
         reader.readAsDataURL(file);
     };
