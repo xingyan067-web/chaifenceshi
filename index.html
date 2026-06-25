@@ -6412,6 +6412,9 @@
                             <div class="wc-list-item center-content" onclick="wcOpenMemorySummaryModal(); wcCloseModal('wc-modal-memory-actions');" style="background: white; height: 56px;">
                                 <span style="font-size: 18px; color: #007AFF;">手动总结聊天</span>
                             </div>
+                            <div class="wc-list-item center-content" onclick="wcOpenCustomPromptModal(); wcCloseModal('wc-modal-memory-actions');" style="background: white; height: 56px;">
+                                <span style="font-size: 18px; color: #007AFF;">自定义总结提示词</span>
+                            </div>
                             <div class="wc-list-item center-content" onclick="wcOpenModal('wc-modal-memory-add'); wcCloseModal('wc-modal-memory-actions');" style="background: white; height: 56px;">
                                 <span style="font-size: 18px; color: #007AFF;">手动添加记忆</span>
                             </div>
@@ -6498,6 +6501,19 @@
                         <div class="wc-modal-body">
                             <div class="wc-form-group"><label class="wc-form-label">发送给AI的最新记忆数量</label><input type="number" id="wc-mem-ai-read-count" class="wc-form-input" placeholder="默认: 5"></div>
                             <button class="wc-btn-primary" onclick="wcSaveAiMemoryCount()">保存</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="wc-modal-memory-custom-prompt" class="wc-modal hidden">
+                    <div class="wc-modal-content">
+                        <div class="wc-modal-header"><h3>自定义总结提示词</h3><button class="wc-close-btn" onclick="wcCloseModal('wc-modal-memory-custom-prompt')">&times;</button></div>
+                        <div class="wc-modal-body">
+                            <div class="wc-form-group"><label class="wc-form-label">提示词中可使用 {{char}} 代表角色名</label></div>
+                            <textarea id="wc-mem-custom-prompt-text" class="wc-form-textarea" style="height: 200px; font-size: 13px; line-height: 1.6;" placeholder="自定义总结提示词..."></textarea>
+                            <div style="display: flex; gap: 10px; margin-top: 12px;">
+                                <button class="wc-btn-primary" onclick="wcSaveCustomPrompt()" style="flex: 1;">保存</button>
+                                <button class="wc-btn-secondary" onclick="wcResetCustomPrompt()" style="flex: 1;">恢复默认</button>
+                            </div>
                         </div>
                     </div>
                 </div>

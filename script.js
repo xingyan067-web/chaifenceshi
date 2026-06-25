@@ -17374,7 +17374,9 @@ async function wcGenerateSummary() {
     try {
         const sliceMsgs = msgs.slice(startIdx, endIdx + 1);
         
-        let prompt = `请总结以下对话的主要内容，提取关键信息和情感变化，字数控制在300字以内。\n`;
+        const defaultPrompt = `Write in the form of {{char}}'s diary. The timeline must be rigorous, complete, concise, and clear, no fewer than 500 words. The writing style should follow the aesthetic of Jinjiang modern romance: smooth and readable, with an emphasis on emotional immersion. Use a mix of long and short sentences to create a visual breathing rhythm; avoid long blocks of text. Metaphors are forbidden. Use plain, direct description of actions, micro-reactions (such as an Adam's apple bobbing, fingertips curling), and everyday spaces (kitchen, convenience store, sofa) to convey intimacy. Employ sensory details like the scent of laundry detergent and the steam rising from hot soup to build texture. Dialogue should be natural and colloquial, interspersed with actions to control pacing. The narrative logic must be coherent, maintaining an overall plain, warm, slice-of-life tone.`;
+        const customPrompt = char.chatConfig?.customSummaryPrompt;
+        let prompt = (customPrompt || defaultPrompt).replace(/\{\{char\}\}/g, char.name) + '\n';
         
         if (selectedWbIds.length > 0) {
             prompt += `\n【参考背景】\n`;
@@ -17474,6 +17476,31 @@ function wcSaveAiMemoryCount() {
     wcSaveData();
     wcCloseModal('wc-modal-memory-ai-count');
     alert(`设置已保存：AI 将读取最新的 ${count} 条记忆。`);
+}
+
+const DEFAULT_SUMMARY_PROMPT = `Write in the form of {{char}}'s diary. The timeline must be rigorous, complete, concise, and clear, no fewer than 500 words. The writing style should follow the aesthetic of Jinjiang modern romance: smooth and readable, with an emphasis on emotional immersion. Use a mix of long and short sentences to create a visual breathing rhythm; avoid long blocks of text. Metaphors are forbidden. Use plain, direct description of actions, micro-reactions (such as an Adam's apple bobbing, fingertips curling), and everyday spaces (kitchen, convenience store, sofa) to convey intimacy. Employ sensory details like the scent of laundry detergent and the steam rising from hot soup to build texture. Dialogue should be natural and colloquial, interspersed with actions to control pacing. The narrative logic must be coherent, maintaining an overall plain, warm, slice-of-life tone.`;
+
+function wcOpenCustomPromptModal() {
+    const char = wcState.characters.find(c => c.id === wcState.activeChatId);
+    const current = (char?.chatConfig?.customSummaryPrompt) ? char.chatConfig.customSummaryPrompt : DEFAULT_SUMMARY_PROMPT;
+    document.getElementById('wc-mem-custom-prompt-text').value = current;
+    wcOpenModal('wc-modal-memory-custom-prompt');
+}
+
+function wcSaveCustomPrompt() {
+    const text = document.getElementById('wc-mem-custom-prompt-text').value.trim();
+    if (!text) return alert("提示词不能为空");
+    const char = wcState.characters.find(c => c.id === wcState.activeChatId);
+    if (!char) return;
+    if (!char.chatConfig) char.chatConfig = {};
+    char.chatConfig.customSummaryPrompt = text;
+    wcSaveData();
+    wcCloseModal('wc-modal-memory-custom-prompt');
+    alert("自定义总结提示词已保存！");
+}
+
+function wcResetCustomPrompt() {
+    document.getElementById('wc-mem-custom-prompt-text').value = DEFAULT_SUMMARY_PROMPT;
 }
 
 // --- 新增：主屏幕系统通知 ---
